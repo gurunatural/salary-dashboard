@@ -9,7 +9,7 @@
     <!-- Load jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Load Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <!-- Set base font -->
     <style>
         body {
@@ -79,9 +79,23 @@
 </head>
 <body class="bg-gray-100">
 
-    <!-- NEW: Main App Container (Hidden by default) -->
+    <!-- Dashboard Lock Screen Modal (NEW) -->
+    <div id="dashboardLockModal" class="modal fixed inset-0 z-[100] flex items-center justify-center bg-gray-900">
+        <div class="modal-content bg-white w-full max-w-sm p-6 rounded-xl shadow-2xl">
+            <h3 class="text-2xl font-semibold text-gray-900 mb-4 text-center">Enter PIN</h3>
+            <p class="text-gray-600 mb-6 text-center">Please enter the PIN to unlock the dashboard.</p>
+            <input type="password" id="lockPinInput" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-xl tracking-widest" maxlength="4">
+            <p id="lockError" class="text-red-500 text-sm text-center mt-2 h-4"></p>
+            <div class="flex justify-end gap-3 mt-6">
+                <button id="unlockDashboardBtn" class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 font-semibold text-lg">Unlock</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container (NEW WRAPPER) -->
     <div id="mainAppContainer" class="hidden">
-        <!-- Tab Navigation -->
+
+        <!-- Header: Tab Navigation & Mode Switch -->
         <div class="bg-white shadow-sm sticky top-0 z-40 p-5">
             <div class="container mx-auto max-w-4xl flex justify-between items-center">
                 <nav class="flex gap-6">
@@ -95,9 +109,8 @@
                         Analysis
                     </button>
                 </nav>
-                <!-- UPDATED: Mode Toggle to Button -->
-                <div class="flex items-center space-x-2">
-                    <button id="modeSwitchBtn" class="bg-blue-600 text-white py-1 px-3 rounded-lg font-semibold text-sm hover:bg-blue-700 transition duration-200 shadow-sm" data-target-mode="owner">
+                <div class="flex items-center">
+                    <button id="modeSwitchBtn" data-mode="accountant" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-200 shadow-md">
                         Switch to Owner Mode
                     </button>
                 </div>
@@ -107,11 +120,11 @@
         <!-- Page 1: Salary Dashboard -->
         <div id="dashboardPage" class="container mx-auto max-w-4xl p-4 sm:p-8">
             <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl">
-                
+            
                 <!-- Logo -->
                 <div class="flex justify-center mb-6">
                     <img src="https://i.postimg.cc/rsRFnMMc/1002397847-removebg-preview-1.png" alt="Company Logo" class="h-20 w-auto"
-                        onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+                         onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
                     <!-- Fallback text if image fails to load -->
                     <div class="hidden text-gray-500 text-center">Logo could not be loaded</div>
                 </div>
@@ -120,10 +133,10 @@
                 <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-6 text-center">
                     Employee Salary Dashboard
                 </h1>
-
+    
                 <!-- Main Form -->
                 <div class="space-y-6">
-
+    
                     <!-- Row 1: Employee, Month, and Year -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
@@ -160,7 +173,7 @@
                             </select>
                         </div>
                     </div>
-
+    
                     <!-- Row 2: Salary and Attendance -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -207,16 +220,16 @@
                             </div>
                         </div>
                     </div>
-
+    
                     <!-- Row 3: Additions -->
                     <div class="border-t border-gray-200 pt-6 space-y-6">
                         <h2 class="text-xl font-semibold text-gray-800">Additions</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label for="overtimeHours" class="block text-sm font-medium text-gray-700 mb-1">Overtime Hours</label>
+                                <label for="overtimeHours" class="block text-sm font-medium text-gray-700 mb-1">Overtime (Hours)</label>
                                 <div class="flex">
-                                    <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">hrs</span>
-                                    <input type="number" id="overtimeHours" placeholder="0" class="w-full px-4 py-2 border border-gray-300 rounded-r-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">Hrs</span>
+                                    <input type="number" id="overtimeHours" placeholder="e.g., 2.5" class="w-full px-4 py-2 border border-gray-300 rounded-r-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 </div>
                             </div>
                             <div>
@@ -227,50 +240,60 @@
                                 </div>
                             </div>
                             <div class="md:col-span-2">
-                                <label for="otherAdditionRemark" class="block text-sm font-medium text-gray-700 mb-1">Other Addition Remark</label>
+                                 <label for="otherAdditionRemark" class="block text-sm font-medium text-gray-700 mb-1">Other Addition Remark</label>
                                 <input type="text" id="otherAdditionRemark" placeholder="e.g., Performance Bonus" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             </div>
                         </div>
                     </div>
-
+    
                     <!-- Row 4: Deductions -->
                     <div class="border-t border-gray-200 pt-6 space-y-6">
                         <h2 class="text-xl font-semibold text-gray-800">Deductions</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="advancePayment" class="block text-sm font-medium text-gray-700 mb-1">Advance Payment</label>
-                                <div class="flex">
-                                    <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">₹</span>
-                                    <input type="number" id="advancePayment" placeholder="0.00" class="w-full px-4 py-2 border border-gray-300 rounded-r-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="advancePayment" class="block text-sm font-medium text-gray-700 mb-1">Advance Payment</label>
+                                    <div class="flex">
+                                        <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">₹</span>
+                                        <input type="number" id="advancePayment" placeholder="0.00" class="w-full px-4 py-2 border border-gray-300 rounded-r-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="otherDeduction" class="block text-sm font-medium text-gray-700 mb-1">Other Deduction</label>
+                                    <div class="flex">
+                                        <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">₹</span>
+                                        <input type="number" id="otherDeduction" placeholder="0.00" class="w-full px-4 py-2 border border-gray-300 rounded-r-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <label for="otherDeduction" class="block text-sm font-medium text-gray-700 mb-1">Other Deduction</label>
-                                <div class="flex">
-                                    <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">₹</span>
-                                    <input type="number" id="otherDeduction" placeholder="0.00" class="w-full px-4 py-2 border border-gray-300 rounded-r-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="advancePaymentRemark" class="block text-sm font-medium text-gray-700 mb-1">Advance Payment Remark</label>
+                                    <input type="text" id="advancePaymentRemark" placeholder="e.g., Loan Installment" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 </div>
-                            </div>
-                            <div class="md:col-span-2">
-                                <label for="otherDeductionRemark" class="block text-sm font-medium text-gray-700 mb-1">Other Deduction Remark</label>
-                                <input type="text" id="otherDeductionRemark" placeholder="e.g., Canteen Bill" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <div>
+                                    <label for="otherDeductionRemark" class="block text-sm font-medium text-gray-700 mb-1">Other Deduction Remark</label>
+                                    <input type="text" id="otherDeductionRemark" placeholder="e.g., Canteen Bill" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
                             </div>
                         </div>
                     </div>
-
+    
+    
                     <!-- Row 5: Calculate Button -->
                     <div class="border-t border-gray-200 pt-8">
-                        <button id="calculateButton" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold text-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 shadow-md">
-                            Calculate Net Pay & Save
-                        </button>
-                        <!-- New Cancel Edit Button -->
-                        <button id="cancelEditRecordBtn" class="w-full bg-gray-600 text-white py-2 px-6 rounded-lg font-semibold text-base hover:bg-gray-700 mt-2 transition duration-200 shadow-md hidden">
-                            Cancel Edit
-                        </button>
+                        <div class="flex gap-4">
+                            <button id="calculateButton" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold text-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 shadow-md">
+                                Calculate Pay
+                            </button>
+                            <button id="cancelEditButton" class="hidden w-1/3 bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-semibold text-lg hover:bg-gray-300 transition duration-200">
+                                Cancel Edit
+                            </button>
+                        </div>
                         <p id="saveStatus" class="text-center text-green-600 text-sm mt-2 h-4"></p>
                     </div>
                 </div>
-
+    
                 <!-- Summary Section (Hidden by default) -->
                 <div id="summarySection" class="hidden mt-10 border-t border-gray-300 pt-8">
                     <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 text-center">
@@ -288,7 +311,7 @@
                                 <div class="text-lg font-semibold text-gray-800" id="summaryDate"></div>
                             </div>
                         </div>
-
+    
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             
                             <!-- Earnings Column -->
@@ -321,7 +344,7 @@
                                     </div>
                                 </div>
                             </div>
-
+    
                             <!-- Deductions Column -->
                             <div class="bg-white p-4 rounded-lg shadow-sm border">
                                 <h3 class="font-bold text-lg text-red-700 mb-3 border-b pb-2">Deductions</h3>
@@ -340,12 +363,13 @@
                                         <span>Advance Payment:</span>
                                         <span class="font-medium text-gray-900" id="summaryAdvance"></span>
                                     </div>
+                                    <div id="summaryAdvanceRemark" class="text-xs text-gray-500 italic pl-4"></div>
                                     <div class="flex justify-between text-gray-700">
                                         <span>Other Deductions:</span>
                                         <span class="font-medium text-gray-900" id="summaryOtherDeduction"></span>
                                     </div>
                                     <div id="summaryOtherDeductionRemark" class="text-xs text-gray-500 italic pl-4"></div>
-
+    
                                     <div class="flex justify-between font-bold border-t pt-2 mt-2">
                                         <span class="text-gray-800">Total Deductions:</span>
                                         <span class="text-red-600" id="summaryTotalDeductions"></span>
@@ -353,21 +377,24 @@
                                 </div>
                             </div>
                         </div>
-
+    
                         <!-- Net Pay -->
                         <div class="mt-6 bg-blue-100 border border-blue-200 p-4 rounded-lg flex justify-between items-center text-xl sm:text-2xl font-bold">
                             <span class="text-blue-800">Net Pay:</span>
                             <span class="text-blue-700" id="summaryNetPay"></span>
                         </div>
-
-                        <!-- Download PDF Button -->
-                        <div class="mt-8">
-                            <button id="downloadPdfButton" class="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200 shadow-md">
+    
+                        <!-- Action Buttons -->
+                        <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <button id="saveRecordButton" class="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200 shadow-md">
+                                Save Record
+                            </button>
+                            <button id="downloadPdfButton" class="w-full bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold text-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-200 shadow-md">
                                 Download as PDF
                             </button>
                         </div>
                     </div>
-
+    
                 </div>
             </div>
         </div>
@@ -378,9 +405,9 @@
                 <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-6 text-center">
                     Saved Salary Data
                 </h1>
-
+    
                 <!-- Filter Controls -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg border">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-lg border">
                     <div>
                         <label for="filterEmployeeName" class="block text-sm font-medium text-gray-700 mb-1">Filter by Employee</label>
                         <select id="filterEmployeeName" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -415,16 +442,16 @@
                     </div>
                 </div>
                 
-                <!-- NEW: Export Button -->
-                <div class="mb-4 flex justify-end">
-                    <button id="exportCsvBtn" class="bg-emerald-600 text-white py-2 px-4 rounded-lg font-semibold text-sm hover:bg-emerald-700 transition duration-200 shadow-sm flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                <!-- CSV Export Button -->
+                <div class="mb-6 flex justify-end">
+                    <button id="exportCsvButton" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-200 shadow-md flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
                         Export to CSV
                     </button>
                 </div>
-
+                
                 <div id="salaryRecordsContainer" class="space-y-4">
                     <!-- Salary records will be populated here by JS -->
                     <p id="noRecordsText" class="text-gray-500 text-center italic">Loading records...</p>
@@ -438,50 +465,63 @@
                 <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-6 text-center">
                     Salary Data Analysis
                 </h1>
-
+    
                 <div id="analysisContent" class="space-y-6">
-                    <!-- Analysis content will be populated by JS -->
-
-                    <!-- NEW: Monthly Salary Chart -->
+                    
+                    <!-- Chart Section -->
                     <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-md">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Total Salary Paid Per Month</h3>
-                        <div class="h-64 md:h-80">
-                            <canvas id="monthlySalaryChart"></canvas>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4" id="analysisChartTitle">Total Salary Paid Per Month (Current Mode)</h3>
+                        <div class="relative h-64 sm:h-80">
+                            <canvas id="myChart"></canvas>
                         </div>
                     </div>
-
+    
                     <!-- Stat Cards Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         
                         <!-- Total Distributed -->
                         <div class="bg-blue-50 p-6 rounded-xl border border-blue-200 shadow-md">
-                            <h3 class="text-sm font-medium text-blue-600 uppercase tracking-wide">Total Salary Distributed</h3>
+                            <h3 class="text-sm font-medium text-blue-600 uppercase tracking-wide">Total Salary Distributed (All Modes)</h3>
                             <p class="text-4xl font-bold text-blue-800 mt-2" id="analysisTotalDistributed">₹0.00</p>
                         </div>
-
+    
                         <!-- Total Payslips -->
                         <div class="bg-green-50 p-6 rounded-xl border border-green-200 shadow-md">
-                            <h3 class="text-sm font-medium text-green-600 uppercase tracking-wide">Total Payslips Issued</h3>
+                            <h3 class="text-sm font-medium text-green-600 uppercase tracking-wide">Total Payslips Issued (All Modes)</h3>
                             <p class="text-4xl font-bold text-green-800 mt-2" id="analysisTotalPayslips">0</p>
                         </div>
-
+    
                         <!-- Average Pay -->
                         <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-200 shadow-md">
-                            <h3 class="text-sm font-medium text-indigo-600 uppercase tracking-wide">Average Net Pay</h3>
+                            <h3 class="text-sm font-medium text-indigo-600 uppercase tracking-wide">Average Net Pay (All Modes)</h3>
                             <p class="text-4xl font-bold text-indigo-800 mt-2" id="analysisAveragePay">₹0.00</p>
                         </div>
-
+    
                         <!-- Highest Single Payslip -->
                         <div class="bg-yellow-50 p-6 rounded-xl border border-yellow-200 shadow-md">
-                            <h3 class="text-sm font-medium text-yellow-600 uppercase tracking-wide">Highest Single Payslip</h3>
+                            <h3 class="text-sm font-medium text-yellow-600 uppercase tracking-wide">Highest Single Payslip (All Modes)</h3>
                             <p class="text-4xl font-bold text-yellow-800 mt-2" id="analysisHighestPayslipAmount">₹0.00</p>
                             <p class="text-sm text-gray-600 mt-1" id="analysisHighestPayslipEmployee">N/A</p>
                         </div>
+    
+                        <!-- Most Leave Taken -->
+                        <div class="bg-red-50 p-6 rounded-xl border border-red-200 shadow-md">
+                            <h3 class="text-sm font-medium text-red-600 uppercase tracking-wide">Most Leave Taken (Current Mode)</h3>
+                            <p class="text-4xl font-bold text-red-800 mt-2" id="analysisMostLeave">0 days</p>
+                            <p class="text-sm text-gray-600 mt-1" id="analysisMostLeaveEmployee">N/A</p>
+                        </div>
+    
+                        <!-- Most Active Worker -->
+                        <div class="bg-green-50 p-6 rounded-xl border border-green-200 shadow-md">
+                            <h3 class="text-sm font-medium text-green-600 uppercase tracking-wide">Most Active Worker (Least Leave)</h3>
+                            <p class="text-4xl font-bold text-green-800 mt-2" id="analysisMostActive">0 days</p>
+                            <p class="text-sm text-gray-600 mt-1" id="analysisMostActiveEmployee">N/A</p>
+                        </div>
                     </div>
-
+    
                     <!-- Financial Summary -->
                     <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-md">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Financial Summary</h3>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Financial Summary (All Modes)</h3>
                         <div class="flex justify-around items-center">
                             <div class="text-center">
                                 <p class="text-sm font-medium text-green-600 uppercase">Total Earnings</p>
@@ -493,10 +533,10 @@
                             </div>
                         </div>
                     </div>
-
+    
                     <!-- Top Paid Employees -->
                     <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-md">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Total Pay by Employee</h3>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Total Pay by Employee (Current Mode)</h3>
                         <ul class="space-y-3 max-h-60 overflow-y-auto" id="analysisEmployeeTotalsList">
                             <!-- Employee totals will be populated here -->
                         </ul>
@@ -504,7 +544,7 @@
                 </div>
                 
                 <p id="noAnalysisDataText" class="text-gray-500 text-center italic hidden">No salary data found to analyze.</p>
-
+    
             </div>
         </div>
     </div> <!-- End of #mainAppContainer -->
@@ -514,7 +554,7 @@
     <div id="employeeModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 opacity-0 pointer-events-none">
         <div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-800">Manage Employees</h2>
+                <h2 class="text-xl font-bold text-gray-800" id="employeeModalTitle">Manage Employees</h2>
                 <button id="closeEmployeeModal" class="text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
             </div>
             
@@ -525,8 +565,8 @@
             </div>
 
             <!-- Add/Edit Employee Form -->
-            <div>
-                <h3 id="employeeFormTitle" class="text-lg font-semibold text-gray-700 mb-2">Add New Employee</h3>
+            <div class="border-t pt-4">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2" id="employeeFormTitle">Add New Employee</h3>
                 <div class="space-y-3">
                     <div>
                         <label for="newEmployeeName" class="block text-sm font-medium text-gray-700 mb-1">Employee Name</label>
@@ -536,28 +576,24 @@
                         <label for="newEmployeeSalary" class="block text-sm font-medium text-gray-700 mb-1">Default Base Salary</label>
                         <div class="flex">
                             <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">₹</span>
-                            <input type="number" id="newEmployeeSalary" placeholder="e.g., 50000" class="w-full px-4 py-2 border border-gray-300 rounded-r-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <input type="number" id="newEmployeeSalary" placeholder="e.g., 30000" class="w-full px-4 py-2 border border-gray-300 rounded-r-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                     </div>
-                    <!-- NEW: Hide Employee Checkbox -->
-                    <div class="flex items-center">
-                        <input type="checkbox" id="newEmployeeHidden" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                        <label for="newEmployeeHidden" class="ml-2 block text-sm font-medium text-gray-700">Hide from Accountant Mode</label>
-                    </div>
                     <div class="flex gap-2">
-                        <button id="addEmployeeBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-200 flex-1">Add</button>
-                        <button id="cancelEditBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 hidden">Cancel</button>
+                        <button id="addEmployeeBtn" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">Add Employee</button>
+                        <button id="updateEmployeeBtn" class="hidden w-full bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-200">Update Employee</button>
+                        <button id="cancelEmployeeUpdateBtn" class="hidden w-1/3 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300">Cancel</button>
                     </div>
+                    <p id="employeeError" class="text-red-500 text-xs mt-1 h-4"></p>
                 </div>
-                <p id="employeeError" class="text-red-500 text-xs mt-1 hidden"></p>
             </div>
         </div>
     </div>
 
-    <!-- Confirm Delete Employee Modal -->
+    <!-- Confirm Employee Delete Modal -->
     <div id="confirmDeleteModal" class="modal fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50 opacity-0 pointer-events-none">
         <div class="modal-content bg-white w-full max-w-sm p-6 rounded-xl shadow-2xl transform scale-95">
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">Confirm Employee Deletion</h3>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Confirm Deletion</h3>
             <p class="text-gray-600 mb-6">Are you sure you want to delete <strong id="employeeToDeleteName"></strong>?</p>
             <div class="flex justify-end gap-3">
                 <button id="cancelDeleteBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300">Cancel</button>
@@ -565,44 +601,24 @@
             </div>
         </div>
     </div>
-
-    <!-- Confirm Delete Salary Record Modal (NEW) -->
-    <div id="confirmDeleteRecordModal" class="modal fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50 opacity-0 pointer-events-none">
+    
+    <!-- Confirm Record Delete Modal -->
+    <div id="confirmRecordDeleteModal" class="modal fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50 opacity-0 pointer-events-none">
         <div class="modal-content bg-white w-full max-w-sm p-6 rounded-xl shadow-2xl transform scale-95">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Confirm Record Deletion</h3>
-            <p class="text-gray-600 mb-6">Are you sure you want to delete this salary record?</p>
-            <p class="text-gray-800 font-medium text-center mb-6" id="recordToDeleteInfo"></p>
+            <p class="text-gray-600 mb-6">Are you sure you want to delete this salary record for <strong id="recordToDeleteName"></strong>?</p>
             <div class="flex justify-end gap-3">
-                <button id="cancelDeleteRecordBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300">Cancel</button>
-                <button id="confirmDeleteRecordBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Delete</button>
+                <button id="cancelRecordDeleteBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button id="confirmRecordDeleteBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Delete</button>
             </div>
         </div>
     </div>
 
-    <!-- Owner Mode Password Modal -->
-    <div id="passwordModal" class="modal fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50 opacity-0 pointer-events-none">
-        <div class="modal-content bg-white w-full max-w-sm p-6 rounded-xl shadow-2xl transform scale-95">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Owner Access Required</h3>
-            <div class="space-y-3">
-                <div>
-                    <label for="passwordInput" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <input type="password" id="passwordInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <p id="passwordError" class="text-red-500 text-xs mt-1 hidden">Incorrect password.</p>
-                <div class="flex justify-end gap-3 pt-2">
-                    <button id="cancelPasswordBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300">Cancel</button>
-                    <button id="loginPasswordBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Login</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- Absent Calendar Modal -->
+    <!-- Calendar Modal -->
     <div id="calendarModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 opacity-0 pointer-events-none">
         <div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-800" id="calendarHeader">Select Absent Dates</h2>
+                <h2 class="text-xl font-bold text-gray-800" id="calendarHeader">Select Dates</h2>
                 <button id="closeCalendarModal" class="text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
             </div>
             
@@ -617,23 +633,18 @@
         </div>
     </div>
 
-    <!-- NEW: App Lock Modal (Visible by default) -->
-    <div id="appLockModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-75">
-        <div class="modal-content bg-white w-full max-w-sm p-6 rounded-xl shadow-2xl">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4 text-center">Dashboard Locked</h3>
-            <div class="space-y-3">
-                <div>
-                    <label for="appLockPasswordInput" class="block text-sm font-medium text-gray-700 mb-1">Enter PIN</label>
-                    <input type="password" id="appLockPasswordInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <p id="appLockError" class="text-red-500 text-xs mt-1 hidden">Incorrect PIN.</p>
-                <div class="flex justify-end gap-3 pt-2">
-                    <button id="unlockAppBtn" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Unlock</button>
-                </div>
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50 opacity-0 pointer-events-none">
+        <div class="modal-content bg-white w-full max-w-sm p-6 rounded-xl shadow-2xl transform scale-95">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Enter Owner Password</h3>
+            <input type="password" id="passwordInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <p id="passwordError" class="text-red-500 text-xs mt-1 h-4"></p>
+            <div class="flex justify-end gap-3 mt-4">
+                <button id="cancelPasswordBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button id="submitPasswordBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Login</button>
             </div>
         </div>
     </div>
-
 
     <!-- Firebase and App Logic -->
     <script type="module">
@@ -664,21 +675,16 @@
 
         // --- Firebase Config and Global Vars ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        
-        // --- THIS IS THE NEW CONFIG FROM THE USER ---
+        // Use user-provided config as a fallback
         const userFirebaseConfig = {
-          apiKey: "AIzaSyCMppXprg2OJswgLSXmmPgyhaRhxwDp0NA",
-          authDomain: "salarymanagement-7f0ec.firebaseapp.com",
-          projectId: "salarymanagement-7f0ec",
-          storageBucket: "salarymanagement-7f0ec.firebasestorage.app",
-          messagingSenderId: "857263287159",
-          appId: "1:857263287159:web:70b284c66afa5be7590f72"
+            apiKey: "AIzaSyCMppXprg2OJswgLSXmmPgyhaRhxwDp0NA",
+            authDomain: "salarymanagement-7f0ec.firebaseapp.com",
+            projectId: "salarymanagement-7f0ec",
+            storageBucket: "salarymanagement-7f0ec.firebasestorage.app",
+            messagingSenderId: "857263287159",
+            appId: "1:857263287159:web:70b284c66afa5be7590f72"
         };
-        // --- END OF NEW CONFIG ---
-
-        // Use the environment-provided config if it exists, otherwise use the one hardcoded above.
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : userFirebaseConfig;
-        
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : JSON.stringify(userFirebaseConfig));
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         let db, auth;
@@ -689,45 +695,107 @@
         let salaryRecords = []; // Will be populated from Firestore
         let employees = []; // Will be populated from Firestore
         let employeeToDelete = null; // Stores {id, name}
-        let employeeToEditId = null; // Stores ID for editing
-        let recordToEditId = null; // NEW: Stores ID for editing a salary record
-        let recordToDeleteId = null; // NEW: Stores ID for deleting a salary record
+        let recordToDeleteId = null; // Stores ID of salary record to delete
         let lastCalculationData = null; // To store data for PDF generation
-        
-        // --- NEW: Mode State ---
-        let isOwnerMode = false; // Default to Accountant Mode
-        let hiddenEmployeeNames = []; // Cache of hidden employee names
+        let currentEditingRecordId = null; // To track if we are in edit mode
+        let currentMode = "accountant"; // 'accountant' or 'owner'
+        let chartInstance = null; // To hold the Chart.js instance
 
         // --- DOM Elements ---
-        // Will be populated by the setupApp function
-        let employeeSelect, manageEmployeesBtn, employeeModal, closeEmployeeModal, employeeListContainer,
-            newEmployeeNameInput, newEmployeeSalaryInput, newEmployeeHiddenInput, addEmployeeBtn,
-            employeeError, employeeFormTitle, cancelEditBtn, baseSalaryInput, confirmDeleteModal,
-            employeeToDeleteName, cancelDeleteBtn, confirmDeleteBtn, confirmDeleteRecordModal,
-            recordToDeleteInfo, cancelDeleteRecordBtn, confirmDeleteRecordBtn, exportCsvBtn,
-            cancelEditRecordBtn, calculateButton, modeSwitchBtn, passwordModal, passwordInput,
-            passwordError, cancelPasswordBtn, loginPasswordBtn, calendarModal, openAbsentCalendarBtn,
-            openHalfDayCalendarBtn, openExtraDayCalendarBtn, closeCalendarModalBtn, cancelCalendarBtn,
-            saveCalendarBtn, calendarGrid, calendarHeader, absentDaysInput, halfDaysInput,
-            extraDaysInput, downloadPdfButton, saveStatus, dashboardTab, salaryDataTab,
-            dashboardPage, salaryDataPage, salaryRecordsContainer, noRecordsText, analysisTab,
-            analysisPage, analysisContent, noAnalysisDataText, analysisTotalDistributed,
-            analysisTotalPayslips, analysisAveragePay, analysisHighestPayslipAmount,
-            analysisHighestPayslipEmployee, analysisTotalEarnings, analysisTotalDeductions,
-            analysisEmployeeTotalsList, monthlySalaryChartCanvas, monthlyChartInstance,
-            summaryOvertimeHoursEl, filterEmployeeName, filterMonth, filterYear;
+        const employeeSelect = document.getElementById('employeeName');
+        const manageEmployeesBtn = document.getElementById('manageEmployeesBtn');
+        const employeeModal = document.getElementById('employeeModal');
+        const closeEmployeeModal = document.getElementById('closeEmployeeModal');
+        const employeeListContainer = document.getElementById('employeeListContainer');
+        const newEmployeeNameInput = document.getElementById('newEmployeeName');
+        const newEmployeeSalaryInput = document.getElementById('newEmployeeSalary');
+        const addEmployeeBtn = document.getElementById('addEmployeeBtn');
+        const updateEmployeeBtn = document.getElementById('updateEmployeeBtn');
+        const cancelEmployeeUpdateBtn = document.getElementById('cancelEmployeeUpdateBtn');
+        const employeeFormTitle = document.getElementById('employeeFormTitle');
+        const employeeError = document.getElementById('employeeError');
+        
+        const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+        const employeeToDeleteName = document.getElementById('employeeToDeleteName');
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        
+        const confirmRecordDeleteModal = document.getElementById('confirmRecordDeleteModal');
+        const recordToDeleteName = document.getElementById('recordToDeleteName');
+        const cancelRecordDeleteBtn = document.getElementById('cancelRecordDeleteBtn');
+        const confirmRecordDeleteBtn = document.getElementById('confirmRecordDeleteBtn');
 
-        // --- NEW: App Lock DOM Elements (available globally) ---
-        const appLockModal = document.getElementById('appLockModal');
-        const appLockPasswordInput = document.getElementById('appLockPasswordInput');
-        const appLockError = document.getElementById('appLockError');
-        const unlockAppBtn = document.getElementById('unlockAppBtn');
+        // --- Calendar Modal Elements ---
+        const calendarModal = document.getElementById('calendarModal');
+        const openAbsentCalendarBtn = document.getElementById('openAbsentCalendar');
+        const openHalfDayCalendarBtn = document.getElementById('openHalfDayCalendar');
+        const openExtraDayCalendarBtn = document.getElementById('openExtraDayCalendar');
+        const closeCalendarModalBtn = document.getElementById('closeCalendarModal');
+        const cancelCalendarBtn = document.getElementById('cancelCalendarBtn');
+        const saveCalendarBtn = document.getElementById('saveCalendarBtn');
+        const calendarGrid = document.getElementById('calendarGrid');
+        const calendarHeader = document.getElementById('calendarHeader');
+        const absentDaysInput = document.getElementById('absentDays');
+        const halfDaysInput = document.getElementById('halfDays');
+        const extraDaysInput = document.getElementById('extraDays');
+        const downloadPdfButton = document.getElementById('downloadPdfButton');
+        const saveStatus = document.getElementById('saveStatus');
+        const calculateButton = document.getElementById('calculateButton');
+        const cancelEditButton = document.getElementById('cancelEditButton');
+        const saveRecordButton = document.getElementById('saveRecordButton');
+
+        // --- Tab Navigation Elements ---
+        const dashboardTab = document.getElementById('dashboardTab');
+        const salaryDataTab = document.getElementById('salaryDataTab');
+        const dashboardPage = document.getElementById('dashboardPage');
+        const salaryDataPage = document.getElementById('salaryDataPage');
+        const salaryRecordsContainer = document.getElementById('salaryRecordsContainer');
+        const noRecordsText = document.getElementById('noRecordsText');
+        const exportCsvButton = document.getElementById('exportCsvButton');
+
+        // --- Page 3: Analysis Elements ---
+        const analysisTab = document.getElementById('analysisTab');
+        const analysisPage = document.getElementById('analysisPage');
+        const analysisContent = document.getElementById('analysisContent');
+        const noAnalysisDataText = document.getElementById('noAnalysisDataText');
+        const analysisTotalDistributed = document.getElementById('analysisTotalDistributed');
+        const analysisTotalPayslips = document.getElementById('analysisTotalPayslips');
+        const analysisAveragePay = document.getElementById('analysisAveragePay');
+        const analysisHighestPayslipAmount = document.getElementById('analysisHighestPayslipAmount');
+        const analysisHighestPayslipEmployee = document.getElementById('analysisHighestPayslipEmployee');
+        const analysisTotalEarnings = document.getElementById('analysisTotalEarnings');
+        const analysisTotalDeductions = document.getElementById('analysisTotalDeductions');
+        const analysisEmployeeTotalsList = document.getElementById('analysisEmployeeTotalsList');
+        const analysisChartTitle = document.getElementById('analysisChartTitle');
+        const analysisMostLeave = document.getElementById('analysisMostLeave');
+        const analysisMostLeaveEmployee = document.getElementById('analysisMostLeaveEmployee');
+        const analysisMostActive = document.getElementById('analysisMostActive');
+        const analysisMostActiveEmployee = document.getElementById('analysisMostActiveEmployee');
+
+        // --- Filter Elements ---
+        const filterEmployeeName = document.getElementById('filterEmployeeName');
+        const filterMonth = document.getElementById('filterMonth');
+        const filterYear = document.getElementById('filterYear');
+        
+        // --- Mode Switch Elements ---
+        const modeSwitchBtn = document.getElementById('modeSwitchBtn');
+        const passwordModal = document.getElementById('passwordModal');
+        const passwordInput = document.getElementById('passwordInput');
+        const passwordError = document.getElementById('passwordError');
+        const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+        const submitPasswordBtn = document.getElementById('submitPasswordBtn');
+
+        // --- Lock Screen Elements (NEW) ---
+        const dashboardLockModal = document.getElementById('dashboardLockModal');
+        const lockPinInput = document.getElementById('lockPinInput');
+        const unlockDashboardBtn = document.getElementById('unlockDashboardBtn');
+        const lockError = document.getElementById('lockError');
         const mainAppContainer = document.getElementById('mainAppContainer');
-
 
         // --- Calendar State ---
         let tempSelectedDates = [];
         let currentCalendarInput = null;
+        let currentEmployeeEditingId = null;
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
         // --- Modal Utility Functions ---
@@ -752,11 +820,15 @@
 
             // 2. Filter the global salaryRecords array
             const filteredRecords = salaryRecords.filter(record => {
+                // PRIMARY FILTER: Only show records for the current mode
+                const modeMatch = record.createdByMode === currentMode;
+                
+                // Secondary filters from user
                 const nameMatch = !nameFilter || record.employeeName === nameFilter;
                 const monthMatch = !monthFilter || record.month === monthFilter;
                 const yearMatch = !yearFilter || record.year == yearFilter; // Use '==' for string/number
                 
-                return nameMatch && monthMatch && yearMatch;
+                return modeMatch && nameMatch && monthMatch && yearMatch;
             });
 
             // 3. Render the *filtered* array
@@ -767,7 +839,7 @@
                 if (salaryRecords.length === 0) {
                     noRecordsText.textContent = "No salary records found.";
                 } else {
-                    noRecordsText.textContent = "No salary records match your filters.";
+                    noRecordsText.textContent = "No salary records match your filters in this mode.";
                 }
                 noRecordsText.classList.remove('hidden');
                 return;
@@ -787,33 +859,27 @@
 
             filteredRecords.forEach(record => { // Use filteredRecords
                 const card = document.createElement('div');
-                card.className = "bg-white p-4 rounded-lg shadow-sm border";
+                card.className = "bg-white p-4 rounded-lg shadow-sm border flex flex-col sm:flex-row justify-between items-start";
                 
                 // Use the JS Date object created when saving
                 const recordDate = record.createdAt ? record.createdAt.toLocaleDateString('en-IN') : 'N/A';
 
                 card.innerHTML = `
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                        <div class="mb-4 sm:mb-0">
-                            <h3 class="text-lg font-semibold text-gray-800">${record.employeeName}</h3>
-                            <p class="text-sm text-gray-600">For ${record.month}, ${record.year}</p>
-                            <p class="text-sm text-gray-400 text-xs">Saved on: ${recordDate}</p>
-                        </div>
-                        <div class="flex flex-col items-start sm:items-end w-full sm:w-auto">
-                            <span class="text-xl font-bold text-blue-700">${formatPdfCurrency(record.netPay)}</span>
-                        </div>
+                    <div class="mb-4 sm:mb-0">
+                        <h3 class="text-lg font-semibold text-gray-800">${record.employeeName}</h3>
+                        <p class="text-sm text-gray-600">For ${record.month}, ${record.year}</p>
+                        <p class="text-xs text-gray-400">Saved on: ${recordDate}</p>
                     </div>
-                    <!-- NEW: Action Buttons -->
-                    <div class="mt-4 pt-4 border-t border-gray-100 flex justify-end gap-2">
-                        <button class="download-record-btn bg-green-100 text-green-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-green-200" data-id="${record.id}">
-                            Download PDF
-                        </button>
-                        <button class="edit-record-btn bg-blue-100 text-blue-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-blue-200" data-id="${record.id}">
-                            Edit
-                        </button>
-                        <button class="delete-record-btn bg-red-100 text-red-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-red-200" data-id="${record.id}">
-                            Delete
-                        </button>
+                    <div class="flex flex-col items-start sm:items-end w-full sm:w-auto">
+                        <span class="text-xl font-bold text-blue-700">${formatPdfCurrency(record.netPay)}</span>
+                        <div class="flex gap-2 mt-2">
+                            <button class="edit-record-btn bg-blue-100 text-blue-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-blue-200" data-id="${record.id}">
+                                Edit
+                            </button>
+                            <button class="delete-record-btn bg-red-100 text-red-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-red-200" data-id="${record.id}" data-name="${record.employeeName}">
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 `;
                 salaryRecordsContainer.appendChild(card);
@@ -834,7 +900,12 @@
                 return `Rs. ${integerPart}.${decimalPart}`;
             };
 
-            if (salaryRecords.length === 0) {
+            // Use ALL records for main stats, regardless of mode
+            const allRecords = salaryRecords;
+            // Use MODE-SPECIFIC records for detailed lists and charts
+            const modeRecords = salaryRecords.filter(r => r.createdByMode === currentMode);
+
+            if (allRecords.length === 0) {
                 analysisContent.classList.add('hidden');
                 noAnalysisDataText.classList.remove('hidden');
                 return;
@@ -845,24 +916,24 @@
 
             // --- Perform Calculations ---
 
-            // 1. Total Salary Distributed
-            const totalDistributed = salaryRecords.reduce((acc, r) => acc + (r.netPay || 0), 0);
+            // 1. Total Salary Distributed (All Modes)
+            const totalDistributed = allRecords.reduce((acc, r) => acc + (r.netPay || 0), 0);
             
-            // 2. Total Payslips
-            const totalPayslips = salaryRecords.length;
+            // 2. Total Payslips (All Modes)
+            const totalPayslips = allRecords.length;
 
-            // 3. Average Pay
+            // 3. Average Pay (All Modes)
             const averagePay = totalPayslips > 0 ? (totalDistributed / totalPayslips) : 0;
 
-            // 4. Highest Single Payslip
-            const highestPayslip = salaryRecords.reduce((max, r) => (r.netPay > max.netPay) ? r : max, { netPay: -Infinity });
+            // 4. Highest Single Payslip (All Modes)
+            const highestPayslip = allRecords.reduce((max, r) => (r.netPay > max.netPay) ? r : max, { netPay: -Infinity });
 
-            // 5. Total Earnings vs Deductions
-            const totalEarnings = salaryRecords.reduce((acc, r) => acc + (r.totalEarnings || 0), 0);
-            const totalDeductions = salaryRecords.reduce((acc, r) => acc + (r.totalDeductions || 0), 0);
+            // 5. Total Earnings vs Deductions (All Modes)
+            const totalEarnings = allRecords.reduce((acc, r) => acc + (r.totalEarnings || 0), 0);
+            const totalDeductions = allRecords.reduce((acc, r) => acc + (r.totalDeductions || 0), 0);
 
-            // 6. Total Pay by Employee
-            const employeeTotals = salaryRecords.reduce((acc, r) => {
+            // 6. Total Pay by Employee (CURRENT MODE ONLY)
+            const employeeTotals = modeRecords.reduce((acc, r) => {
                 const name = r.employeeName;
                 if (!acc[name]) {
                     acc[name] = 0;
@@ -874,6 +945,47 @@
             const sortedEmployeeTotals = Object.entries(employeeTotals)
                 .map(([name, total]) => ({ name, total }))
                 .sort((a, b) => b.total - a.total); // Sort descending
+
+            // 7. Attendance Analysis (CURRENT MODE ONLY)
+            const employeeAttendance = modeRecords.reduce((acc, r) => {
+                const name = r.employeeName;
+                if (!acc[name]) {
+                    acc[name] = 0;
+                }
+                // Leave = full absent days + 0.5 for each half day
+                const leave = (r.absentDays || 0) + ((r.halfDays || 0) * 0.5);
+                acc[name] += leave;
+                return acc;
+            }, {});
+
+            const sortedAttendance = Object.entries(employeeAttendance)
+                .map(([name, totalLeaveDays]) => ({ name, totalLeaveDays }))
+                .sort((a, b) => b.totalLeaveDays - a.totalLeaveDays); // Sort descending
+
+            let mostLeave = null;
+            let mostActive = null;
+
+            if (sortedAttendance.length > 0) {
+                mostLeave = sortedAttendance[0];
+                mostActive = sortedAttendance[sortedAttendance.length - 1]; // Last item is the lowest
+            }
+
+
+            // 8. Monthly Totals for Chart (CURRENT MODE ONLY)
+            const monthlyTotals = modeRecords.reduce((acc, r) => {
+                const monthIndex = monthNames.indexOf(r.month);
+                const key = `${r.year}-${String(monthIndex).padStart(2, '0')}`; // e.g., "2025-09"
+                if (!acc[key]) {
+                    acc[key] = { total: 0, label: `${r.month.substring(0, 3)} ${r.year}` };
+                }
+                acc[key].total += (r.netPay || 0);
+                return acc;
+            }, {});
+
+            const sortedMonthlyTotals = Object.entries(monthlyTotals)
+                .map(([key, data]) => ({ key, ...data }))
+                .sort((a, b) => a.key.localeCompare(b.key)); // Sort chronologically
+
 
             // --- Update DOM ---
             analysisTotalDistributed.textContent = formatPdfCurrency(totalDistributed);
@@ -891,6 +1003,23 @@
             analysisTotalEarnings.textContent = formatPdfCurrency(totalEarnings);
             analysisTotalDeductions.textContent = formatPdfCurrency(totalDeductions);
 
+            // Update new attendance cards
+            if (mostLeave && mostLeave.totalLeaveDays > 0) {
+                analysisMostLeave.textContent = `${mostLeave.totalLeaveDays} days`;
+                analysisMostLeaveEmployee.textContent = mostLeave.name;
+            } else {
+                analysisMostLeave.textContent = "0 days";
+                analysisMostLeaveEmployee.textContent = "N/A";
+            }
+
+            if (mostActive) {
+                analysisMostActive.textContent = `${mostActive.totalLeaveDays} days`;
+                analysisMostActiveEmployee.textContent = mostActive.name;
+            } else {
+                analysisMostActive.textContent = "0 days";
+                analysisMostActiveEmployee.textContent = "N/A";
+            }
+
             // Populate employee list
             analysisEmployeeTotalsList.innerHTML = '';
             if (sortedEmployeeTotals.length > 0) {
@@ -904,63 +1033,33 @@
                     analysisEmployeeTotalsList.appendChild(li);
                 });
             } else {
-                analysisEmployeeTotalsList.innerHTML = '<li class="text-gray-500 italic">No employee data to show.</li>';
+                analysisEmployeeTotalsList.innerHTML = `<li class="text-gray-500 italic">No employee data to show in ${currentMode} mode.</li>`;
             }
-
-            // --- NEW: Render Monthly Salary Chart ---
-            renderMonthlyChart();
-        }
-
-        /**
-         * NEW: Renders the monthly salary bar chart.
-         */
-        function renderMonthlyChart() {
-            if (!monthlySalaryChartCanvas) return;
-
-            // 1. Process data for the chart
-            const monthlyTotals = salaryRecords.reduce((acc, r) => {
-                const key = `${r.month}-${r.year}`;
-                if (!acc[key]) {
-                    acc[key] = 0;
-                }
-                acc[key] += (r.netPay || 0);
-                return acc;
-            }, {});
-
-            // 2. Sort the data chronologically
-            const sortedMonthlyData = Object.entries(monthlyTotals)
-                .map(([key, total]) => {
-                    const [month, year] = key.split('-');
-                    return {
-                        key,
-                        total,
-                        date: new Date(year, monthNames.indexOf(month), 1) // Create a sortable date
-                    };
-                })
-                .sort((a, b) => a.date - b.date); // Sort chronologically
-
-            // 3. Prepare chart labels and data
-            const labels = sortedMonthlyData.map(d => d.key);
-            const data = sortedMonthlyData.map(d => d.total);
-
-            // 4. Destroy old chart instance if it exists
-            if (monthlyChartInstance) {
-                monthlyChartInstance.destroy();
+            
+            // Update Chart Title
+            analysisChartTitle.textContent = `Total Salary Paid Per Month (${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)} Mode)`;
+            
+            // Render Chart
+            const chartLabels = sortedMonthlyTotals.map(m => m.label);
+            const chartData = sortedMonthlyTotals.map(m => m.total);
+            
+            const ctx = document.getElementById('myChart').getContext('2d');
+            
+            if (chartInstance) {
+                chartInstance.destroy(); // Destroy old chart before creating new one
             }
-
-            // 5. Create the new chart
-            const ctx = monthlySalaryChartCanvas.getContext('2d');
-            monthlyChartInstance = new Chart(ctx, {
+            
+            chartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: chartLabels,
                     datasets: [{
                         label: 'Total Salary Paid',
-                        data: data,
-                        backgroundColor: 'rgba(59, 130, 246, 0.7)', // bg-blue-500 with opacity
+                        data: chartData,
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)', // bg-blue-500 with opacity
                         borderColor: 'rgba(59, 130, 246, 1)', // border-blue-500
                         borderWidth: 1,
-                        borderRadius: 5,
+                        borderRadius: 5
                     }]
                 },
                 options: {
@@ -970,13 +1069,16 @@
                         y: {
                             beginAtZero: true,
                             ticks: {
-                                callback: function(value, index, values) {
+                                callback: function(value) {
                                     return '₹' + value.toLocaleString('en-IN');
                                 }
                             }
                         }
                     },
                     plugins: {
+                        legend: {
+                            display: false
+                        },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
@@ -985,14 +1087,11 @@
                                         label += ': ';
                                     }
                                     if (context.parsed.y !== null) {
-                                        label += new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(context.parsed.y);
+                                        label += context.parsed.y.toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
                                     }
                                     return label;
                                 }
                             }
-                        },
-                        legend: {
-                            display: false // Hide legend for a cleaner look with one dataset
                         }
                     }
                 }
@@ -1020,6 +1119,7 @@
                 const option = document.createElement('option');
                 option.value = emp.name;
                 option.textContent = emp.name;
+                option.dataset.salary = emp.baseSalary || ""; // Store salary
                 if (emp.name === currentSelection) {
                     option.selected = true;
                 }
@@ -1051,61 +1151,49 @@
 
             sortedEmployees.forEach(emp => {
                 const div = document.createElement('div');
-                div.className = 'flex justify-between items-center p-2 bg-gray-50 rounded-lg border';
-                // NEW: Added "Hidden" badge and data-hidden attribute
+                div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg border';
+                const salaryDisplay = emp.baseSalary ? `(₹${emp.baseSalary.toLocaleString('en-IN')})` : '(No Salary Set)';
                 div.innerHTML = `
                     <div>
                         <span class="text-gray-800 font-medium">${emp.name}</span>
-                        <span class="text-sm text-gray-500 ml-2">(${(emp.baseSalary || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>
-                        ${emp.isHidden ? '<span class="ml-2 text-xs font-medium bg-red-100 text-red-800 px-2 py-0.5 rounded-full">Hidden</span>' : ''}
+                        <span class="text-gray-500 text-sm ml-2">${salaryDisplay}</span>
                     </div>
-                    <div>
-                        <button class="edit-employee-btn text-blue-500 hover:text-blue-700 text-sm font-medium mr-3" data-id="${emp.id}" data-name="${emp.name}" data-salary="${emp.baseSalary || 0}" data-hidden="${emp.isHidden || false}">
-                            Edit
-                        </button>
-                        <button class="delete-employee-btn text-red-500 hover:text-red-700 font-bold text-xl" data-id="${emp.id}" data-name="${emp.name}">&times;</button>
+                    <div class="flex gap-2">
+                        <button class="edit-employee-btn text-blue-600 hover:text-blue-800 font-medium" data-id="${emp.id}" data-name="${emp.name}" data-salary="${emp.baseSalary || ''}">Edit</button>
+                        <button class="delete-employee-btn text-red-500 hover:text-red-700 font-medium" data-id="${emp.id}" data-name="${emp.name}">Delete</button>
                     </div>
                 `;
                 employeeListContainer.appendChild(div);
             });
         }
-
+        
         /**
-         * Resets the Add/Edit Employee form
+         * Resets the employee management form to 'Add' mode.
          */
         function resetEmployeeForm() {
-            newEmployeeNameInput.value = '';
-            newEmployeeSalaryInput.value = '';
-            newEmployeeHiddenInput.checked = false; // NEW: Reset checkbox
+            currentEmployeeEditingId = null;
+            employeeFormTitle.textContent = "Add New Employee";
+            newEmployeeNameInput.value = "";
+            newEmployeeSalaryInput.value = "";
+            addEmployeeBtn.classList.remove('hidden');
+            updateEmployeeBtn.classList.add('hidden');
+            cancelEmployeeUpdateBtn.classList.add('hidden');
             employeeError.classList.add('hidden');
-            employeeToEditId = null;
-            employeeFormTitle.textContent = 'Add New Employee';
-            addEmployeeBtn.textContent = 'Add';
-            cancelEditBtn.classList.add('hidden');
-            addEmployeeBtn.classList.add('flex-1'); // Make 'Add' button full-width again
         }
 
         /**
-         * Adds or updates an employee in Firestore.
+         * Adds a new employee to Firestore.
          */
         async function addEmployee() {
             const name = newEmployeeNameInput.value.trim();
-            const salaryString = newEmployeeSalaryInput.value.trim();
-            const salary = parseFloat(salaryString) || 0;
-            const isHidden = newEmployeeHiddenInput.checked; // NEW: Get hidden state
-
+            const baseSalary = parseFloat(newEmployeeSalaryInput.value) || 0;
+            
             if (!name) {
                 employeeError.textContent = 'Please enter a name.';
                 employeeError.classList.remove('hidden');
                 return;
             }
-            if (salaryString === '' || salary < 0) {
-                 employeeError.textContent = 'Please enter a valid salary (0 or more).';
-                 employeeError.classList.remove('hidden');
-                 return;
-            }
-            // Case-insensitive check, allows saving if the name belongs to the employee being edited
-            if (employees.some(emp => emp.name.toLowerCase() === name.toLowerCase() && emp.id !== employeeToEditId)) {
+            if (employees.some(emp => emp.name.toLowerCase() === name.toLowerCase())) {
                 employeeError.textContent = 'This employee already exists.';
                 employeeError.classList.remove('hidden');
                 return;
@@ -1113,44 +1201,77 @@
 
             try {
                 addEmployeeBtn.disabled = true;
-                addEmployeeBtn.textContent = employeeToEditId ? "Updating..." : "Adding...";
-
-                if (employeeToEditId) {
-                    // This is an update
-                    const docRef = doc(db, employeesCollection.path, employeeToEditId);
-                    await updateDoc(docRef, {
-                        name: name,
-                        baseSalary: salary,
-                        isHidden: isHidden // NEW: Save hidden state
-                    });
-                    console.log("Employee updated with ID: ", employeeToEditId);
-                } else {
-                    // This is an add
-                    const docRef = await addDoc(employeesCollection, {
-                        name: name,
-                        baseSalary: salary,
-                        isHidden: isHidden, // NEW: Save hidden state
-                        createdAt: Timestamp.now()
-                    });
-                    console.log("Employee added with ID: ", docRef.id);
-                }
+                addEmployeeBtn.textContent = "Adding...";
+                const docRef = await addDoc(employeesCollection, {
+                    name: name,
+                    baseSalary: baseSalary,
+                    createdAt: Timestamp.now()
+                });
+                console.log("Employee added with ID: ", docRef.id);
                 
-                resetEmployeeForm(); // Reset the form
+                resetEmployeeForm(); // Reset form after successful add
+                
+                // Also clear the main form to avoid confusion
+                clearForm();
+                document.getElementById('summarySection').classList.add('hidden');
                 
             } catch (error) {
-                console.error("Error saving employee:", error);
-                employeeError.textContent = "Error saving employee. Please try again.";
+                console.error("Error adding employee:", error);
+                employeeError.textContent = "Error adding employee. Please try again.";
                 employeeError.classList.remove('hidden');
             } finally {
                 addEmployeeBtn.disabled = false;
-                // Button text is reset by resetEmployeeForm()
+                addEmployeeBtn.textContent = "Add Employee";
+            }
+        }
+        
+        /**
+         * Updates an existing employee in Firestore.
+         */
+        async function updateEmployee() {
+            const name = newEmployeeNameInput.value.trim();
+            const baseSalary = parseFloat(newEmployeeSalaryInput.value) || 0;
+
+            if (!name || !currentEmployeeEditingId) {
+                employeeError.textContent = 'An error occurred. Please try again.';
+                employeeError.classList.remove('hidden');
+                return;
+            }
+            
+            // Check if name already exists (and it's not the employee we are editing)
+            if (employees.some(emp => emp.name.toLowerCase() === name.toLowerCase() && emp.id !== currentEmployeeEditingId)) {
+                employeeError.textContent = 'This employee name already exists.';
+                employeeError.classList.remove('hidden');
+                return;
+            }
+            
+            try {
+                updateEmployeeBtn.disabled = true;
+                updateEmployeeBtn.textContent = "Updating...";
+                
+                const docRef = doc(db, employeesCollection.path, currentEmployeeEditingId);
+                await updateDoc(docRef, {
+                    name: name,
+                    baseSalary: baseSalary
+                });
+                
+                console.log("Employee updated successfully:", name);
+                resetEmployeeForm();
+                
+            } catch (error) {
+                console.error("Error updating employee:", error);
+                employeeError.textContent = "Error updating employee. Please try again.";
+                employeeError.classList.remove('hidden');
+            } finally {
+                updateEmployeeBtn.disabled = false;
+                updateEmployeeBtn.textContent = "Update Employee";
             }
         }
         
         /**
          * Deletes an employee from Firestore.
          */
-        async function confirmDelete() {
+        async function confirmDeleteEmployee() {
             if (!employeeToDelete) {
                 console.error("No employee selected for deletion.");
                 hideModal(confirmDeleteModal);
@@ -1176,158 +1297,76 @@
         }
         
         /**
+         * Deletes a salary record from Firestore.
+         */
+        async function confirmDeleteRecord() {
+            if (!recordToDeleteId) {
+                console.error("No record selected for deletion.");
+                hideModal(confirmRecordDeleteModal);
+                return;
+            }
+
+            confirmRecordDeleteBtn.disabled = true;
+            confirmRecordDeleteBtn.textContent = "Deleting...";
+
+            try {
+                const docRef = doc(db, salaryRecordsCollection.path, recordToDeleteId);
+                await deleteDoc(docRef);
+                console.log("Record deleted successfully:", recordToDeleteId);
+            } catch (error) {
+                console.error("Error deleting record:", error);
+            } finally {
+                hideModal(confirmRecordDeleteModal);
+                recordToDeleteId = null;
+                confirmRecordDeleteBtn.disabled = false;
+                confirmRecordDeleteBtn.textContent = "Delete";
+                // List will auto-update thanks to onSnapshot
+            }
+        }
+        
+        /**
          * Saves or updates the calculated salary record to Firestore.
-         * MODIFIED: Now checks for `recordToEditId` to update existing doc.
          */
         async function saveSalaryRecord(recordData) {
             try {
-                if (recordToEditId) {
-                    // This is an UPDATE
-                    const docRef = doc(db, salaryRecordsCollection.path, recordToEditId);
-                    await updateDoc(docRef, recordData); // Just update the data
-                    console.log("Salary record updated in Firestore with ID:", recordToEditId);
-                    saveStatus.textContent = "Updated successfully!";
+                saveRecordButton.disabled = true;
+                
+                const newRecord = {
+                    ...recordData,
+                    createdByMode: currentMode, // Tag the record with the current mode
+                    createdAt: Timestamp.now() // Use Firestore Timestamp
+                };
 
+                if (currentEditingRecordId) {
+                    // This is an UPDATE
+                    saveRecordButton.textContent = "Saving Updates...";
+                    const docRef = doc(db, salaryRecordsCollection.path, currentEditingRecordId);
+                    await updateDoc(docRef, recordData); // Only save the data, not createdAt
+                    console.log("Salary record updated in Firestore with ID:", currentEditingRecordId);
+                    saveStatus.textContent = "Updates saved successfully!";
                 } else {
                     // This is a NEW record
-                    const newRecord = {
-                        ...recordData,
-                        createdAt: Timestamp.now() // Use Firestore Timestamp
-                    };
+                    saveRecordButton.textContent = "Saving Record...";
                     const docRef = await addDoc(salaryRecordsCollection, newRecord);
                     console.log("Salary record saved to Firestore with ID:", docRef.id);
                     saveStatus.textContent = "Saved successfully!";
                 }
                 
                 setTimeout(() => saveStatus.textContent = "", 2000); // Clear message
+                
+                // After saving, reset the form
+                resetToCalculateMode();
+                clearForm();
+
             } catch (error) {
                 console.error("Error saving salary record to Firestore:", error);
                 saveStatus.textContent = "Error saving record.";
                 setTimeout(() => saveStatus.textContent = "", 2000); // Clear message
-            }
-        }
-
-        /**
-         * NEW: Deletes a salary record from Firestore.
-         */
-        async function confirmDeleteRecord() {
-            if (!recordToDeleteId) {
-                console.error("No record selected for deletion.");
-                hideModal(confirmDeleteRecordModal);
-                return;
-            }
-
-            confirmDeleteRecordBtn.disabled = true;
-            confirmDeleteRecordBtn.textContent = "Deleting...";
-
-            try {
-                const docRef = doc(db, salaryRecordsCollection.path, recordToDeleteId);
-                await deleteDoc(docRef);
-                console.log("Salary record deleted successfully:", recordToDeleteId);
-            } catch (error) {
-                console.error("Error deleting salary record:", error);
             } finally {
-                hideModal(confirmDeleteRecordModal);
-                recordToDeleteId = null;
-                confirmDeleteRecordBtn.disabled = false;
-                confirmDeleteRecordBtn.textContent = "Delete";
-                // UI will auto-update from onSnapshot
+                saveRecordButton.disabled = false;
+                // Text is reset in resetToCalculateMode()
             }
         }
-
-
-        /**
-         * NEW: Exports the currently filtered salary data to a CSV file.
-         */
-        function exportToCsv() {
-            // 1. Get filter values
-            const nameFilter = filterEmployeeName.value;
-            const monthFilter = filterMonth.value;
-            const yearFilter = filterYear.value;
-
-            // 2. Filter the global salaryRecords array
-            const filteredRecords = salaryRecords.filter(record => {
-                const nameMatch = !nameFilter || record.employeeName === nameFilter;
-                const monthMatch = !monthFilter || record.month === monthFilter;
-                const yearMatch = !yearFilter || record.year == yearFilter;
-                return nameMatch && monthMatch && yearMatch;
-            });
-
-            if (filteredRecords.length === 0) {
-                console.log("No data to export.");
-                // Optionally show a small message
-                const originalText = exportCsvBtn.innerHTML;
-                exportCsvBtn.textContent = "No data";
-                exportCsvBtn.disabled = true;
-                setTimeout(() => {
-                    exportCsvBtn.innerHTML = originalText;
-                    exportCsvBtn.disabled = false;
-                }, 2000);
-                return;
-            }
-
-            // 3. Define CSV Headers
-            const headers = [
-                "Employee Name", "Month", "Year",
-                "Base Salary", "Extra Day Addition", "Overtime Pay", "Overtime Hours", "Other Addition", "Total Earnings",
-                "Absent Deduction", "Half Day Deduction", "Advance Payment", "Other Deduction", "Total Deductions",
-                "Net Pay",
-                "Absent Dates (YYYY-MM-DD)", "Half Day Dates (YYYY-MM-DD)", "Extra Day Dates (YYYY-MM-DD)",
-                "Other Addition Remark", "Other Deduction Remark"
-            ];
-
-            let csvContent = headers.join(",") + "\n";
-
-            // 4. Helper to sanitize fields
-            const sanitize = (str) => {
-                if (str == null) return '""';
-                let s = String(str).replace(/"/g, '""'); // Escape double quotes
-                if (s.includes(',')) s = `"${s}"`; // Add quotes if comma
-                return s;
-            };
-
-            // 5. Add rows
-            filteredRecords.forEach(record => {
-                const row = [
-                    record.employeeName,
-                    record.month,
-                    record.year,
-                    record.baseSalary || 0,
-                    record.extraDayAddition || 0,
-                    record.overtimePay || 0,
-                    record.overtimeHours || 0,
-                    record.otherAddition || 0,
-                    record.totalEarnings || 0,
-                    record.absentDeduction || 0,
-                    record.halfDayDeduction || 0,
-                    record.advancePayment || 0,
-                    record.otherDeduction || 0,
-                    record.totalDeductions || 0,
-                    record.netPay || 0,
-                    `"${(record.absentDates || []).join(";")}"`, // Quote lists
-                    `"${(record.halfDayDates || []).join(";")}"`,
-                    `"${(record.extraDayDates || []).join(";")}"`,
-                    sanitize(record.otherAdditionRemark),
-                    sanitize(record.otherDeductionRemark)
-                ];
-                csvContent += row.join(",") + "\n";
-            });
-
-            // 6. Create and Trigger Download
-            const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
-            const link = document.createElement("a");
-            
-            const filenameYear = filterYear.value || "all_years";
-            const filenameMonth = filterMonth.value || "all_months";
-            const filename = `salary_export_${filenameYear}_${filenameMonth}.csv`;
-
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", filename);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
 
         /**
          * Sets up a real-time listener for the employees collection.
@@ -1335,17 +1374,7 @@
         function listenForEmployees() {
             if (!employeesCollection) return;
             onSnapshot(employeesCollection, (snapshot) => {
-                // FIRST: Update the full list and the cache of hidden names
-                const allEmployees = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                hiddenEmployeeNames = allEmployees.filter(emp => emp.isHidden).map(emp => emp.name);
-                
-                // SECOND: Filter the main 'employees' array based on the mode
-                if (isOwnerMode) {
-                    employees = allEmployees;
-                } else {
-                    employees = allEmployees.filter(emp => !emp.isHidden);
-                }
-                
+                employees = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 console.log("Employees updated:", employees);
                 renderEmployeeSelect();
                 renderEmployeeManagementList();
@@ -1361,7 +1390,6 @@
         function listenForSalaryRecords() {
             if (!salaryRecordsCollection) return;
 
-            // Query to sort by date, newest first
             const q = query(salaryRecordsCollection); 
             // Note: We will sort in JS. Firestore sorting requires indexes.
             
@@ -1376,16 +1404,16 @@
                     };
                 });
 
-                // NEW: Filter records based on mode
-                if (!isOwnerMode) {
-                    salaryRecords = salaryRecords.filter(rec => !hiddenEmployeeNames.includes(rec.employeeName));
-                }
-
                 // Sort in JavaScript (newest first)
                 salaryRecords.sort((a, b) => b.createdAt - a.createdAt);
 
                 console.log("Salary records updated:", salaryRecords);
                 renderSalaryRecords(); // Re-render the list on the data page
+                
+                // Re-render analysis if on that page
+                if (!analysisPage.classList.contains('hidden')) {
+                    renderAnalysis();
+                }
             }, (error) => {
                 console.error("Error listening for salary records:", error);
                 noRecordsText.textContent = "Error loading salary records.";
@@ -1393,71 +1421,6 @@
             });
         }
 
-        /**
-         * NEW: Sets the application's user mode (Owner vs. Accountant).
-         */
-        function setMode(isOwner) {
-            isOwnerMode = isOwner;
-            localStorage.setItem('salaryAppMode', isOwner ? 'owner' : 'accountant');
-
-            if (isOwner) {
-                // Now in Owner Mode, button shows "Switch to Accountant"
-                modeSwitchBtn.textContent = "Switch to Accountant Mode";
-                modeSwitchBtn.dataset.targetMode = 'accountant';
-                modeSwitchBtn.classList.add('bg-gray-600', 'hover:bg-gray-700');
-                modeSwitchBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-            } else {
-                // Now in Accountant Mode, button shows "Switch to Owner"
-                modeSwitchBtn.textContent = "Switch to Owner Mode";
-                modeSwitchBtn.dataset.targetMode = 'owner';
-                modeSwitchBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
-                modeSwitchBtn.classList.remove('bg-gray-600', 'hover:bg-gray-700');
-            }
-            
-            // Re-run the listeners' filtering logic
-            if (employeesCollection) listenForEmployees();
-            if (salaryRecordsCollection) listenForSalaryRecords();
-            
-            // Re-render analysis if the page is active
-            if (analysisTab.classList.contains('active')) {
-                renderAnalysis();
-            }
-        }
-
-
-        /**
-         * NEW: Resets the main salary dashboard form.
-         */
-        function resetMainForm() {
-            // Clear all text/number inputs
-            document.getElementById('employeeName').value = '';
-            document.getElementById('baseSalary').value = '';
-            document.getElementById('overtimeHours').value = '';
-            document.getElementById('otherAddition').value = '';
-            document.getElementById('otherAdditionRemark').value = '';
-            document.getElementById('advancePayment').value = '';
-            document.getElementById('otherDeduction').value = '';
-            document.getElementById('otherDeductionRemark').value = '';
-            
-            // Clear calendar inputs
-            absentDaysInput.value = '0';
-            absentDaysInput.dataset.dates = '[]';
-            halfDaysInput.value = '0';
-            halfDaysInput.dataset.dates = '[]';
-            extraDaysInput.value = '0';
-            extraDaysInput.dataset.dates = '[]';
-            
-            // Reset date dropdowns to current
-            initDateFields(); 
-            
-            // Reset edit state
-            recordToEditId = null;
-            calculateButton.textContent = 'Calculate Net Pay & Save';
-            cancelEditRecordBtn.classList.add('hidden');
-            
-            // Hide summary
-            document.getElementById('summarySection').classList.add('hidden');
-        }
 
         // --- Calendar Functions ---
         function renderCalendar(month, year) {
@@ -1544,44 +1507,41 @@
          * Populates month and year dropdowns.
          */
         function initDateFields() {
-             // Set current month as default
+            // Set default month to *previous* month
             const currentDate = new Date();
-            const currentMonthIndex = currentDate.getMonth();
-            const currentMonthName = monthNames[currentMonthIndex];
-            document.getElementById('month').value = currentMonthName;
+            currentDate.setMonth(currentDate.getMonth() - 1); // Go back one month
+            
+            const defaultMonthIndex = currentDate.getMonth();
+            const defaultMonthName = monthNames[defaultMonthIndex];
+            const defaultYear = currentDate.getFullYear(); // This handles Jan -> Dec wrap-around
+            
+            document.getElementById('month').value = defaultMonthName;
             
             // Populate and set current year as default
-            const currentYear = currentDate.getFullYear();
             const yearSelect = document.getElementById('year');
             const filterYearSelect = document.getElementById('filterYear'); // Get filter select
-            const startYear = currentYear - 50; 
+            const startYear = defaultYear - 50; 
             const endYear = 2095;
             
-            // Only repopulate if they are empty
-            if (filterYearSelect.options.length <= 1) { 
-                filterYearSelect.innerHTML = '<option value="">All Years</option>'; // Add default
-                yearSelect.innerHTML = ''; // Clear dashboard select
-                for (let year = endYear; year >= startYear; year--) { // Loop from newest to oldest
-                    const option = document.createElement('option');
-                    option.value = year;
-                    option.textContent = year;
-                    
-                    const filterOption = option.cloneNode(true); // Clone for filter
-                    
-                    yearSelect.appendChild(option);
-                    filterYearSelect.appendChild(filterOption);
-                }
-            }
+            // Clear existing options (for filter select)
+            filterYearSelect.innerHTML = '<option value="">All Years</option>'; // Add default
+            yearSelect.innerHTML = ''; // Clear dashboard select
             
-            yearSelect.value = currentYear; // Set default for dashboard
+            for (let year = endYear; year >= startYear; year--) { // Loop from newest to oldest
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                
+                const filterOption = option.cloneNode(true); // Clone for filter
+                
+                yearSelect.appendChild(option);
+                filterYearSelect.appendChild(filterOption);
+            }
+            yearSelect.value = defaultYear; // Set default for dashboard
             
-            // Only set filter defaults if they are not already set
-            if (!filterMonth.value) {
-                filterMonth.value = currentMonthName;
-            }
-            if (!filterYear.value) {
-                filterYear.value = currentYear; 
-            }
+            // Set default for filters
+            document.getElementById('filterMonth').value = defaultMonthName;
+            filterYearSelect.value = defaultYear; 
         }
         
         /**
@@ -1593,8 +1553,7 @@
             
             if (!record) {
                 console.log("No data to generate PDF."); 
-                // We shouldn't use alert()
-                saveStatus.textContent = "No data to generate PDF.";
+                saveStatus.textContent = "No data to generate PDF. Please calculate first.";
                 setTimeout(() => saveStatus.textContent = "", 2000);
                 return;
             }
@@ -1613,7 +1572,15 @@
                 return `Rs. ${integerPart}.${decimalPart}`;
             };
             
+            // Helper to format date arrays
+            const formatDateList = (dates) => {
+                if (!dates || dates.length === 0) return "";
+                const formattedDates = dates.map(d => d.split('-')[2]).join(', '); // Get just the day
+                return `(Dates: ${formattedDates})`;
+            };
+            
             let yPos = 20;
+            let itemY = 0; // To align remarks
 
             // Header
             doc.setFontSize(20);
@@ -1651,33 +1618,36 @@
             doc.text("Base Salary:", 15, yPos);
             doc.text(formatPdfCurrency(record.baseSalary), 195, yPos, { align: 'right' });
             yPos += 7;
-            doc.text("Extra Day Addition:", 15, yPos);
-            doc.text(formatPdfCurrency(record.extraDayAddition), 195, yPos, { align: 'right' });
             
-            // NEW: Add Extra Day dates to PDF
+            itemY = yPos;
+            doc.text("Extra Day Addition:", 15, itemY);
+            doc.text(formatPdfCurrency(record.extraDayAddition), 195, itemY, { align: 'right' });
             if (record.extraDayDates && record.extraDayDates.length > 0) {
-                yPos += 7; // Move down for dates
-                const formattedDates = record.extraDayDates.map(d => d.split('-')[2]).join(', ');
+                yPos += 7;
                 doc.setFont(undefined, 'italic');
                 doc.setFontSize(9);
-                doc.text(`  (Dates: ${formattedDates})`, 15, yPos);
+                doc.text(formatDateList(record.extraDayDates), 15, yPos);
                 doc.setFont(undefined, 'normal');
                 doc.setFontSize(11);
             }
             yPos += 7;
             
-            // PDF: Show Overtime Hours and Calculated Pay
-            let overtimeLabel = "Overtime Pay:";
+            itemY = yPos;
+            doc.text("Overtime Pay:", 15, itemY);
+            doc.text(formatPdfCurrency(record.overtimePay), 195, itemY, { align: 'right' });
             if (record.overtimeHours && record.overtimeHours > 0) {
-                overtimeLabel = `Overtime Pay (${record.overtimeHours} hrs):`;
+                yPos += 7;
+                doc.setFont(undefined, 'italic');
+                doc.setFontSize(9);
+                doc.text(`(${record.overtimeHours} hrs)`, 15, yPos);
+                doc.setFont(undefined, 'normal');
+                doc.setFontSize(11);
             }
-            doc.text(overtimeLabel, 15, yPos);
-            doc.text(formatPdfCurrency(record.overtimePay), 195, yPos, { align: 'right' });
             yPos += 7;
-
-            doc.text("Other Additions:", 15, yPos);
-            doc.text(formatPdfCurrency(record.otherAddition), 195, yPos, { align: 'right' });
             
+            itemY = yPos;
+            doc.text("Other Additions:", 15, itemY);
+            doc.text(formatPdfCurrency(record.otherAddition), 195, itemY, { align: 'right' });
             if (record.otherAdditionRemark) {
                 yPos += 7;
                 doc.setFont(undefined, 'italic');
@@ -1704,42 +1674,48 @@
             doc.setFont(undefined, 'normal');
             doc.setFontSize(11);
 
-            doc.text("Absent Day Deduction:", 15, yPos);
-            doc.text(formatPdfCurrency(record.absentDeduction), 195, yPos, { align: 'right' });
-            
-            // NEW: Add Absent Day dates to PDF
+            itemY = yPos;
+            doc.text("Absent Day Deduction:", 15, itemY);
+            doc.text(formatPdfCurrency(record.absentDeduction), 195, itemY, { align: 'right' });
             if (record.absentDates && record.absentDates.length > 0) {
-                yPos += 7; // Move down for dates
-                const formattedDates = record.absentDates.map(d => d.split('-')[2]).join(', ');
+                yPos += 7;
                 doc.setFont(undefined, 'italic');
                 doc.setFontSize(9);
-                doc.text(`  (Dates: ${formattedDates})`, 15, yPos);
+                doc.text(formatDateList(record.absentDates), 15, yPos);
                 doc.setFont(undefined, 'normal');
                 doc.setFontSize(11);
             }
             yPos += 7;
-            
-            doc.text("Half Day Deduction:", 15, yPos);
-            doc.text(formatPdfCurrency(record.halfDayDeduction), 195, yPos, { align: 'right' });
-            
-            // NEW: Add Half Day dates to PDF
+
+            itemY = yPos;
+            doc.text("Half Day Deduction:", 15, itemY);
+            doc.text(formatPdfCurrency(record.halfDayDeduction), 195, itemY, { align: 'right' });
             if (record.halfDayDates && record.halfDayDates.length > 0) {
-                yPos += 7; // Move down for dates
-                const formattedDates = record.halfDayDates.map(d => d.split('-')[2]).join(', ');
+                yPos += 7;
                 doc.setFont(undefined, 'italic');
                 doc.setFontSize(9);
-                doc.text(`  (Dates: ${formattedDates})`, 15, yPos);
+                doc.text(formatDateList(record.halfDayDates), 15, yPos);
+                doc.setFont(undefined, 'normal');
+                doc.setFontSize(11);
+            }
+            yPos += 7;
+
+            itemY = yPos;
+            doc.text("Advance Payment:", 15, itemY);
+            doc.text(formatPdfCurrency(record.advancePayment), 195, itemY, { align: 'right' });
+            if (record.advancePaymentRemark) {
+                yPos += 7;
+                doc.setFont(undefined, 'italic');
+                doc.setFontSize(9);
+                doc.text(`  (${record.advancePaymentRemark})`, 15, yPos);
                 doc.setFont(undefined, 'normal');
                 doc.setFontSize(11);
             }
             yPos += 7;
             
-            doc.text("Advance Payment:", 15, yPos);
-            doc.text(formatPdfCurrency(record.advancePayment), 195, yPos, { align: 'right' });
-            yPos += 7;
-            doc.text("Other Deductions:", 15, yPos);
-            doc.text(formatPdfCurrency(record.otherDeduction), 195, yPos, { align: 'right' });
-            
+            itemY = yPos;
+            doc.text("Other Deductions:", 15, itemY);
+            doc.text(formatPdfCurrency(record.otherDeduction), 195, itemY, { align: 'right' });
             if (record.otherDeductionRemark) {
                 yPos += 7;
                 doc.setFont(undefined, 'italic');
@@ -1774,14 +1750,184 @@
             // Save
             doc.save(`Payslip_${record.employeeName.replace(/ /g, '_')}_${record.month}_${record.year}.pdf`);
         }
+        
+        /**
+         * Exports the currently filtered salary records to a CSV file.
+         */
+        function exportToCsv() {
+            // 1. Get filter values
+            const nameFilter = filterEmployeeName.value;
+            const monthFilter = filterMonth.value;
+            const yearFilter = filterYear.value;
+
+            // 2. Filter the global salaryRecords array
+            const filteredRecords = salaryRecords.filter(record => {
+                const modeMatch = record.createdByMode === currentMode;
+                const nameMatch = !nameFilter || record.employeeName === nameFilter;
+                const monthMatch = !monthFilter || record.month === monthFilter;
+                const yearMatch = !yearFilter || record.year == yearFilter;
+                return modeMatch && nameMatch && monthMatch && yearMatch;
+            });
+            
+            if (filteredRecords.length === 0) {
+                noRecordsText.textContent = "No records to export.";
+                setTimeout(() => renderSalaryRecords(), 2000); // Re-render to clear
+                return;
+            }
+
+            // 3. Helper to escape CSV fields
+            const escapeCsv = (field) => {
+                if (field === null || field === undefined) return '""';
+                let str = String(field);
+                // If field contains a comma, quote, or newline, wrap it in double quotes
+                if (str.search(/("|,|\n)/g) >= 0) {
+                    str = '"' + str.replace(/"/g, '""') + '"';
+                }
+                return str;
+            };
+
+            // 4. Define CSV Headers
+            const headers = [
+                'Employee Name', 'Month', 'Year', 'Created At', 'Created By Mode',
+                'Base Salary', 'Absent Days', 'Half Days', 'Extra Days',
+                'Overtime Hours', 'Overtime Pay', 'Other Addition', 'Other Addition Remark',
+                'Total Earnings', 'Absent Deduction', 'Half Day Deduction',
+                'Advance Payment', 'Advance Payment Remark', 'Other Deduction', 'Other Deduction Remark',
+                'Total Deductions', 'Net Pay', 'Absent Dates', 'Half Day Dates', 'Extra Day Dates'
+            ];
+            
+            // 5. Create CSV Content
+            let csvContent = headers.join(',') + '\n';
+            
+            filteredRecords.forEach(r => {
+                const row = [
+                    r.employeeName, r.month, r.year, r.createdAt.toISOString(), r.createdByMode,
+                    r.baseSalary, r.absentDays, r.halfDays, r.extraDays,
+                    r.overtimeHours, r.overtimePay, r.otherAddition, r.otherAdditionRemark,
+                    r.totalEarnings, r.absentDeduction, r.halfDayDeduction,
+                    r.advancePayment, r.advancePaymentRemark, r.otherDeduction, r.otherDeductionRemark,
+                    r.totalDeductions, r.netPay,
+                    JSON.stringify(r.absentDates || []), // Store arrays as JSON strings
+                    JSON.stringify(r.halfDayDates || []),
+                    JSON.stringify(r.extraDayDates || [])
+                ].map(escapeCsv).join(',');
+                csvContent += row + '\n';
+            });
+
+            // 6. Create and Trigger Download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            
+            // Create dynamic filename
+            let filename = `salary_export_${currentMode}`;
+            if (yearFilter) filename += `_${yearFilter}`;
+            if (monthFilter) filename += `_${monthFilter}`;
+            if (nameFilter) filename += `_${nameFilter.replace(/ /g, '_')}`;
+            filename += '.csv';
+            
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        /**
+         * Clears all fields on the main salary form.
+         */
+        function clearForm() {
+            // employeeSelect.value = ""; // Keep employee selected
+            document.getElementById('baseSalary').value = "";
+            
+            absentDaysInput.value = "0";
+            absentDaysInput.dataset.dates = "[]";
+            halfDaysInput.value = "0";
+            halfDaysInput.dataset.dates = "[]";
+            extraDaysInput.value = "0";
+            extraDaysInput.dataset.dates = "[]";
+            
+            document.getElementById('overtimeHours').value = "";
+            document.getElementById('otherAddition').value = "";
+            document.getElementById('otherAdditionRemark').value = "";
+            
+            document.getElementById('advancePayment').value = "";
+            document.getElementById('advancePaymentRemark').value = "";
+            document.getElementById('otherDeduction').value = "";
+            document.getElementById('otherDeductionRemark').value = "";
+            
+            // Clear summary
+            document.getElementById('summarySection').classList.add('hidden');
+            lastCalculationData = null;
+        }
+        
+        /**
+         * Puts the form into 'Edit' mode, populating it with record data.
+         */
+        function loadRecordForEdit(recordId) {
+            const record = salaryRecords.find(r => r.id === recordId);
+            if (!record) {
+                console.error("Could not find record to edit:", recordId);
+                return;
+            }
+
+            // Set global editing ID
+            currentEditingRecordId = recordId;
+
+            // Fill form fields
+            employeeSelect.value = record.employeeName;
+            document.getElementById('month').value = record.month;
+            document.getElementById('year').value = record.year;
+            
+            document.getElementById('baseSalary').value = record.baseSalary || "";
+            
+            absentDaysInput.value = record.absentDays || "0";
+            absentDaysInput.dataset.dates = JSON.stringify(record.absentDates || []);
+            halfDaysInput.value = record.halfDays || "0";
+            halfDaysInput.dataset.dates = JSON.stringify(record.halfDayDates || []);
+            extraDaysInput.value = record.extraDays || "0";
+            extraDaysInput.dataset.dates = JSON.stringify(record.extraDayDates || []);
+            
+            document.getElementById('overtimeHours').value = record.overtimeHours || "";
+            document.getElementById('otherAddition').value = record.otherAddition || "";
+            document.getElementById('otherAdditionRemark').value = record.otherAdditionRemark || "";
+            
+            document.getElementById('advancePayment').value = record.advancePayment || "";
+            document.getElementById('advancePaymentRemark').value = record.advancePaymentRemark || "";
+            document.getElementById('otherDeduction').value = record.otherDeduction || "";
+            document.getElementById('otherDeductionRemark').value = record.otherDeductionRemark || "";
+            
+            // Switch UI to edit mode
+            calculateButton.textContent = "Calculate Updates";
+            saveRecordButton.textContent = "Save Updates";
+            cancelEditButton.classList.remove('hidden');
+            document.getElementById('summarySection').classList.add('hidden'); // Hide summary until recalculated
+            
+            // Switch to dashboard tab
+            dashboardTab.click();
+            window.scrollTo(0, 0); // Scroll to top
+        }
+        
+        /**
+         * Resets the form from 'Edit' mode back to 'Calculate' mode.
+         */
+        function resetToCalculateMode() {
+            currentEditingRecordId = null;
+            calculateButton.textContent = "Calculate Pay";
+            saveRecordButton.textContent = "Save Record";
+            cancelEditButton.classList.add('hidden');
+            document.getElementById('summarySection').classList.add('hidden');
+            lastCalculationData = null;
+            clearForm(); // Also clear the fields
+        }
 
 
         // --- Firebase Initialization and Auth ---
         async function initializeFirebase() {
             try {
                 if (!firebaseConfig || Object.keys(firebaseConfig).length === 0) {
-                    console.warn("Firebase config is missing. App will run in-memory mode.");
-                    // We can't proceed with Firebase
+                    console.warn("Firebase config is missing. App cannot connect to database.");
                     return;
                 }
 
@@ -1796,7 +1942,7 @@
                         userId = user.uid;
 
                         // --- Define Firestore Collections ---
-                        // Use public data path for this collaborative app
+                        // Use public data path
                         employeesCollection = collection(db, `artifacts/${appId}/public/data/employees`);
                         salaryRecordsCollection = collection(db, `artifacts/${appId}/public/data/salaryRecords`);
 
@@ -1806,7 +1952,6 @@
                     } else {
                         console.log("User is not authenticated.");
                         userId = null;
-                        // Handle logged-out state if necessary (e.g., disable UI)
                     }
                 });
 
@@ -1824,87 +1969,54 @@
                 noRecordsText.classList.remove('hidden');
             }
         }
-
-        // --- NEW: Main App Initialization Function ---
-        // This function now holds all the setup code that runs *after* unlocking
-        function setupApp() {
-            // --- Populate DOM Elements ---
-            employeeSelect = document.getElementById('employeeName');
-            manageEmployeesBtn = document.getElementById('manageEmployeesBtn');
-            employeeModal = document.getElementById('employeeModal');
-            closeEmployeeModal = document.getElementById('closeEmployeeModal');
-            employeeListContainer = document.getElementById('employeeListContainer');
-            newEmployeeNameInput = document.getElementById('newEmployeeName');
-            newEmployeeSalaryInput = document.getElementById('newEmployeeSalary'); 
-            newEmployeeHiddenInput = document.getElementById('newEmployeeHidden');
-            addEmployeeBtn = document.getElementById('addEmployeeBtn');
-            employeeError = document.getElementById('employeeError');
-            employeeFormTitle = document.getElementById('employeeFormTitle'); 
-            cancelEditBtn = document.getElementById('cancelEditBtn'); 
-            baseSalaryInput = document.getElementById('baseSalary'); 
-            confirmDeleteModal = document.getElementById('confirmDeleteModal');
-            employeeToDeleteName = document.getElementById('employeeToDeleteName');
-            cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
-            confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-            confirmDeleteRecordModal = document.getElementById('confirmDeleteRecordModal');
-            recordToDeleteInfo = document.getElementById('recordToDeleteInfo');
-            cancelDeleteRecordBtn = document.getElementById('cancelDeleteRecordBtn');
-            confirmDeleteRecordBtn = document.getElementById('confirmDeleteRecordBtn');
-            exportCsvBtn = document.getElementById('exportCsvBtn');
-            cancelEditRecordBtn = document.getElementById('cancelEditRecordBtn');
-            calculateButton = document.getElementById('calculateButton');
-            modeSwitchBtn = document.getElementById('modeSwitchBtn');
-            passwordModal = document.getElementById('passwordModal');
-            passwordInput = document.getElementById('passwordInput');
-            passwordError = document.getElementById('passwordError');
-            cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
-            loginPasswordBtn = document.getElementById('loginPasswordBtn');
-            calendarModal = document.getElementById('calendarModal');
-            openAbsentCalendarBtn = document.getElementById('openAbsentCalendar');
-            openHalfDayCalendarBtn = document.getElementById('openHalfDayCalendar');
-            openExtraDayCalendarBtn = document.getElementById('openExtraDayCalendar');
-            closeCalendarModalBtn = document.getElementById('closeCalendarModal');
-            cancelCalendarBtn = document.getElementById('cancelCalendarBtn');
-            saveCalendarBtn = document.getElementById('saveCalendarBtn');
-            calendarGrid = document.getElementById('calendarGrid');
-            calendarHeader = document.getElementById('calendarHeader');
-            absentDaysInput = document.getElementById('absentDays');
-            halfDaysInput = document.getElementById('halfDays');
-            extraDaysInput = document.getElementById('extraDays');
-            downloadPdfButton = document.getElementById('downloadPdfButton');
-            saveStatus = document.getElementById('saveStatus');
-            dashboardTab = document.getElementById('dashboardTab');
-            salaryDataTab = document.getElementById('salaryDataTab');
-            dashboardPage = document.getElementById('dashboardPage');
-            salaryDataPage = document.getElementById('salaryDataPage');
-            salaryRecordsContainer = document.getElementById('salaryRecordsContainer');
-            noRecordsText = document.getElementById('noRecordsText');
-            analysisTab = document.getElementById('analysisTab');
-            analysisPage = document.getElementById('analysisPage');
-            analysisContent = document.getElementById('analysisContent');
-            noAnalysisDataText = document.getElementById('noAnalysisDataText');
-            analysisTotalDistributed = document.getElementById('analysisTotalDistributed');
-            analysisTotalPayslips = document.getElementById('analysisTotalPayslips');
-            analysisAveragePay = document.getElementById('analysisAveragePay');
-            analysisHighestPayslipAmount = document.getElementById('analysisHighestPayslipAmount');
-            analysisHighestPayslipEmployee = document.getElementById('analysisHighestPayslipEmployee');
-            analysisTotalEarnings = document.getElementById('analysisTotalEarnings');
-            analysisTotalDeductions = document.getElementById('analysisTotalDeductions');
-            analysisEmployeeTotalsList = document.getElementById('analysisEmployeeTotalsList');
-            monthlySalaryChartCanvas = document.getElementById('monthlySalaryChart');
-            summaryOvertimeHoursEl = document.getElementById('summaryOvertimeHours');
-            filterEmployeeName = document.getElementById('filterEmployeeName');
-            filterMonth = document.getElementById('filterMonth');
-            filterYear = document.getElementById('filterYear');
+        
+        // --- Mode Switching Logic ---
+        function setMode(mode) {
+            currentMode = mode;
+            if (mode === 'owner') {
+                modeSwitchBtn.textContent = 'Switch to Accountant Mode';
+                modeSwitchBtn.dataset.mode = 'owner';
+                modeSwitchBtn.classList.replace('bg-indigo-600', 'bg-red-600');
+                modeSwitchBtn.classList.replace('hover:bg-indigo-700', 'hover:bg-red-700');
+            } else {
+                modeSwitchBtn.textContent = 'Switch to Owner Mode';
+                modeSwitchBtn.dataset.mode = 'accountant';
+                modeSwitchBtn.classList.replace('bg-red-600', 'bg-indigo-600');
+                modeSwitchBtn.classList.replace('hover:bg-red-700', 'hover:bg-indigo-700');
+            }
+            console.log("Mode switched to:", currentMode);
             
-            // --- Run Initial Setup ---
-            initDateFields();
+            // Re-render data and analysis for the new mode
+            renderSalaryRecords();
+            if (!analysisPage.classList.contains('hidden')) {
+                renderAnalysis();
+            }
+        }
+        
+        
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // initDateFields(); // <-- MOVED
+            // initializeFirebase(); // <-- MOVED
             
-            // NEW: Set initial mode from localStorage, defaulting to 'accountant'
-            const savedMode = localStorage.getItem('salaryAppMode') || 'accountant';
-            setMode(savedMode === 'owner');
+            // --- Dashboard Lock Listener (NEW) ---
+            unlockDashboardBtn.addEventListener('click', () => {
+                if (lockPinInput.value === '9131') {
+                    // Correct PIN
+                    lockError.textContent = "";
+                    dashboardLockModal.classList.add('opacity-0', 'pointer-events-none');
+                    mainAppContainer.classList.remove('hidden');
+                    
+                    // NOW initialize the app
+                    initDateFields();
+                    initializeFirebase(); // Start Firebase connection
 
-            initializeFirebase(); // Start Firebase connection
+                } else {
+                    // Incorrect PIN
+                    lockError.textContent = "Incorrect PIN. Please try again.";
+                    lockPinInput.value = "";
+                }
+            });
             
             // --- Tab Navigation Listeners ---
             dashboardTab.addEventListener('click', () => {
@@ -1923,8 +2035,6 @@
                 dashboardTab.classList.remove('active');
                 salaryDataTab.classList.add('active');
                 analysisTab.classList.remove('active'); // Deactivate analysis
-                // Data is already being listened for, but a manual re-render
-                // can be good if filters were changed while on the other tab.
                 renderSalaryRecords();
             });
 
@@ -1935,23 +2045,22 @@
                 dashboardTab.classList.remove('active');
                 salaryDataTab.classList.remove('active');
                 analysisTab.classList.add('active'); // Activate analysis
-                // Calculate and render analysis data
                 renderAnalysis();
             });
 
             // --- Employee Modal Listeners ---
             manageEmployeesBtn.addEventListener('click', () => {
-                resetEmployeeForm(); // Reset form every time it's opened
+                resetEmployeeForm(); // Ensure form is in 'Add' mode
                 showModal(employeeModal);
             });
             closeEmployeeModal.addEventListener('click', () => hideModal(employeeModal));
             addEmployeeBtn.addEventListener('click', addEmployee);
+            updateEmployeeBtn.addEventListener('click', updateEmployee);
+            cancelEmployeeUpdateBtn.addEventListener('click', resetEmployeeForm);
             
-            // Delete and Edit confirmation listeners (using delegation)
+            // Employee Edit/Delete listeners (using delegation)
             employeeListContainer.addEventListener('click', (e) => {
                 const deleteBtn = e.target.closest('.delete-employee-btn');
-                const editBtn = e.target.closest('.edit-employee-btn');
-
                 if (deleteBtn) {
                     employeeToDelete = {
                         id: deleteBtn.dataset.id,
@@ -1959,160 +2068,48 @@
                     };
                     employeeToDeleteName.textContent = employeeToDelete.name;
                     showModal(confirmDeleteModal);
-                } else if (editBtn) {
-                    // Handle Edit
-                    employeeToEditId = editBtn.dataset.id;
+                }
+                
+                const editBtn = e.target.closest('.edit-employee-btn');
+                if (editBtn) {
+                    currentEmployeeEditingId = editBtn.dataset.id;
+                    employeeFormTitle.textContent = "Update Employee";
                     newEmployeeNameInput.value = editBtn.dataset.name;
                     newEmployeeSalaryInput.value = editBtn.dataset.salary;
-                    newEmployeeHiddenInput.checked = (editBtn.dataset.hidden === 'true'); // NEW: Set checkbox state
-                    
-                    employeeFormTitle.textContent = 'Edit Employee';
-                    addEmployeeBtn.textContent = 'Update';
-                    cancelEditBtn.classList.remove('hidden');
-                    addEmployeeBtn.classList.remove('flex-1'); // Make 'Add' button regular size
-                    
-                    newEmployeeNameInput.focus(); // Focus on the name input
+                    addEmployeeBtn.classList.add('hidden');
+                    updateEmployeeBtn.classList.remove('hidden');
+                    cancelEmployeeUpdateBtn.classList.remove('hidden');
+                    employeeError.classList.add('hidden');
                 }
             });
             cancelDeleteBtn.addEventListener('click', () => hideModal(confirmDeleteModal));
-            confirmDeleteBtn.addEventListener('click', confirmDelete);
-            cancelEditBtn.addEventListener('click', resetEmployeeForm); // Add listener for cancel edit
+            confirmDeleteBtn.addEventListener('click', confirmDeleteEmployee);
             
-            // --- PDF Download Listener ---
-            downloadPdfButton.addEventListener('click', () => generatePdf()); // Calls with no args
-
-            // --- Salary Record Edit/Delete/Download Listeners (Event Delegation) ---
+            // --- Salary Record Edit/Delete Listeners (Delegation) ---
             salaryRecordsContainer.addEventListener('click', (e) => {
-                const downloadBtn = e.target.closest('.download-record-btn');
-                const editBtn = e.target.closest('.edit-record-btn');
                 const deleteBtn = e.target.closest('.delete-record-btn');
-
-                if (downloadBtn) {
-                    const recordId = downloadBtn.dataset.id;
-                    const recordToDownload = salaryRecords.find(r => r.id === recordId);
-                    if (recordToDownload) {
-                        generatePdf(recordToDownload);
-                    } else {
-                        console.error("Could not find record to download:", recordId);
-                    }
-                }
-
-                if (editBtn) {
-                    const recordId = editBtn.dataset.id;
-                    const recordToEdit = salaryRecords.find(r => r.id === recordId);
-                    if (recordToEdit) {
-                        // 1. Populate the form
-                        document.getElementById('employeeName').value = recordToEdit.employeeName;
-                        document.getElementById('month').value = recordToEdit.month;
-                        document.getElementById('year').value = recordToEdit.year;
-                        document.getElementById('baseSalary').value = recordToEdit.baseSalary || '';
-                        document.getElementById('overtimeHours').value = recordToEdit.overtimeHours || ''; // Use overtimeHours
-                        document.getElementById('otherAddition').value = recordToEdit.otherAddition || '';
-                        document.getElementById('otherAdditionRemark').value = recordToEdit.otherAdditionRemark || '';
-                        document.getElementById('advancePayment').value = recordToEdit.advancePayment || '';
-                        document.getElementById('otherDeduction').value = recordToEdit.otherDeduction || '';
-                        document.getElementById('otherDeductionRemark').value = recordToEdit.otherDeductionRemark || '';
-                        
-                        // 2. Populate calendar inputs
-                        absentDaysInput.value = (recordToEdit.absentDates || []).length;
-                        absentDaysInput.dataset.dates = JSON.stringify(recordToEdit.absentDates || []);
-                        halfDaysInput.value = (recordToEdit.halfDayDates || []).length;
-                        halfDaysInput.dataset.dates = JSON.stringify(recordToEdit.halfDayDates || []);
-                        extraDaysInput.value = (recordToEdit.extraDayDates || []).length;
-                        extraDaysInput.dataset.dates = JSON.stringify(recordToEdit.extraDayDates || []);
-
-
-                        // 3. Set edit state
-                        recordToEditId = recordId;
-                        calculateButton.textContent = "Update & Save";
-                        cancelEditRecordBtn.classList.remove('hidden');
-
-                        // 4. Switch to dashboard tab
-                        dashboardTab.click();
-                        window.scrollTo(0, 0); // Scroll to top
-                    } else {
-                        console.error("Could not find record to edit:", recordId);
-                    }
-                }
-
                 if (deleteBtn) {
-                    const recordId = deleteBtn.dataset.id;
-                    const record = salaryRecords.find(r => r.id === recordId);
-                    if (record) {
-                        recordToDeleteInfo.textContent = `${record.employeeName} - ${record.month} ${record.year}`;
-                        recordToDeleteId = recordId;
-                        showModal(confirmDeleteRecordModal);
-                    } else {
-                         console.error("Could not find record to delete:", recordId);
-                    }
+                    recordToDeleteId = deleteBtn.dataset.id;
+                    recordToDeleteName.textContent = deleteBtn.dataset.name;
+                    showModal(confirmRecordDeleteModal);
+                }
+                
+                const editBtn = e.target.closest('.edit-record-btn');
+                if (editBtn) {
+                    loadRecordForEdit(editBtn.dataset.id);
                 }
             });
-
-            // --- Salary Record Delete Modal Listeners ---
-            cancelDeleteRecordBtn.addEventListener('click', () => {
-                hideModal(confirmDeleteRecordModal);
-                recordToDeleteId = null;
-            });
-            confirmDeleteRecordBtn.addEventListener('click', confirmDeleteRecord);
-
-            // --- Main Form Cancel Edit Listener ---
-            cancelEditRecordBtn.addEventListener('click', resetMainForm);
-
-            // --- NEW: Export CSV Listener ---
-            exportCsvBtn.addEventListener('click', exportToCsv);
-
-            // --- UPDATED: Mode Switch Listener ---
-            modeSwitchBtn.addEventListener('click', () => {
-                const targetMode = modeSwitchBtn.dataset.targetMode;
-                if (targetMode === 'accountant') {
-                    // Switching from Owner -> Accountant (no password)
-                    setMode(false);
-                } else {
-                    // Switching from Accountant -> Owner (needs password)
-                    passwordInput.value = '';
-                    passwordError.classList.add('hidden');
-                    showModal(passwordModal);
-                }
-            });
-
-            // --- NEW: Password Modal Listeners ---
-            loginPasswordBtn.addEventListener('click', () => {
-                if (passwordInput.value === '9111000') { // This is the Owner Mode password
-                    setMode(true);
-                    hideModal(passwordModal);
-                } else {
-                    passwordError.classList.remove('hidden');
-                    passwordInput.value = '';
-                }
-            });
-
-            cancelPasswordBtn.addEventListener('click', () => {
-                hideModal(passwordModal);
-            });
-
+            cancelRecordDeleteBtn.addEventListener('click', () => hideModal(confirmRecordDeleteModal));
+            confirmRecordDeleteBtn.addEventListener('click', confirmDeleteRecord);
+            
+            // --- PDF/CSV Download Listeners ---
+            downloadPdfButton.addEventListener('click', () => generatePdf()); // Calls with no args
+            exportCsvButton.addEventListener('click', exportToCsv);
 
             // --- Filter Listeners ---
             filterEmployeeName.addEventListener('change', renderSalaryRecords);
             filterMonth.addEventListener('change', renderSalaryRecords);
             filterYear.addEventListener('change', renderSalaryRecords);
-
-            // --- Auto-fill Base Salary on Employee Change ---
-            employeeSelect.addEventListener('change', () => {
-                // Only auto-fill if NOT in edit mode
-                if (!recordToEditId) {
-                    const selectedName = employeeSelect.value;
-                    if (selectedName) {
-                        const selectedEmployee = employees.find(emp => emp.name === selectedName);
-                        if (selectedEmployee) {
-                            baseSalaryInput.value = selectedEmployee.baseSalary || '';
-                        } else {
-                            baseSalaryInput.value = '';
-                        }
-                    } else {
-                        baseSalaryInput.value = '';
-                    }
-                }
-            });
 
             // --- Calendar Listeners ---
             calendarGrid.addEventListener('click', (e) => {
@@ -2126,6 +2123,7 @@
                     } else {
                         tempSelectedDates.push(date);
                     }
+                    tempSelectedDates.sort(); // Keep them in order
                 }
             });
 
@@ -2144,10 +2142,52 @@
                 currentCalendarInput = null;
                 tempSelectedDates = [];
             });
-
-
+            
+            // --- Employee Dropdown Listener ---
+            employeeSelect.addEventListener('change', (e) => {
+                // Do not auto-fill if we are in edit mode
+                if (currentEditingRecordId) {
+                    return;
+                }
+                
+                // Clear all fields first
+                clearForm();
+                
+                // Then, set the new base salary
+                const selectedOption = e.target.options[e.target.selectedIndex];
+                const salary = selectedOption.dataset.salary;
+                if (salary) {
+                    document.getElementById('baseSalary').value = salary;
+                }
+            });
+            
+            // --- Mode Switch Listeners ---
+            modeSwitchBtn.addEventListener('click', () => {
+                if (modeSwitchBtn.dataset.mode === 'accountant') {
+                    // Trying to switch to Owner mode, show password modal
+                    passwordError.classList.add('hidden');
+                    passwordInput.value = "";
+                    showModal(passwordModal);
+                } else {
+                    // Switching from Owner to Accountant mode, no password needed
+                    setMode('accountant');
+                }
+            });
+            
+            cancelPasswordBtn.addEventListener('click', () => hideModal(passwordModal));
+            submitPasswordBtn.addEventListener('click', () => {
+                const pass = passwordInput.value;
+                if (pass === '9111000') { // This check is correct
+                    setMode('owner');
+                    hideModal(passwordModal);
+                } else {
+                    passwordError.textContent = "Incorrect password.";
+                    passwordError.classList.remove('hidden');
+                }
+            });
+            
             // --- Calculation Logic ---
-            calculateButton.addEventListener('click', async function() {
+            calculateButton.addEventListener('click', function() {
                 
                 // --- Get Input Values ---
                 const employeeName = document.getElementById('employeeName').value;
@@ -2169,27 +2209,28 @@
                 const extraDays = parseFloat(document.getElementById('extraDays').value) || 0;
                 const extraDayDates = JSON.parse(document.getElementById('extraDays').dataset.dates || '[]');
                 
-                const overtimeHours = parseFloat(document.getElementById('overtimeHours').value) || 0; // Get hours
+                const overtimeHours = parseFloat(document.getElementById('overtimeHours').value) || 0;
                 const otherAddition = parseFloat(document.getElementById('otherAddition').value) || 0;
-                const otherAdditionRemark = document.getElementById('otherAdditionRemark').value;
+                const otherAdditionRemark = document.getElementById('otherAdditionRemark').value.trim();
                 
                 const advancePayment = parseFloat(document.getElementById('advancePayment').value) || 0;
+                const advancePaymentRemark = document.getElementById('advancePaymentRemark').value.trim();
                 const otherDeduction = parseFloat(document.getElementById('otherDeduction').value) || 0;
-                const otherDeductionRemark = document.getElementById('otherDeductionRemark').value;
+                const otherDeductionRemark = document.getElementById('otherDeductionRemark').value.trim();
 
                 // --- Perform Calculations ---
                 
-                // Calculate per-day salary. Assuming 30 days in a month as requested by user.
+                // Calculate per-day salary. Assuming 30 days in a month as requested.
                 const perDaySalary = baseSalary > 0 ? (baseSalary / 30) : 0;
-                // NEW: Calculate per-hour salary based on 9-hour day
+                // Calculate per-hour salary. Assuming 9 hours per day.
                 const perHourSalary = perDaySalary > 0 ? (perDaySalary / 9) : 0;
 
                 const absentDeduction = perDaySalary * absentDays;
                 const halfDayDeduction = (perDaySalary / 2) * halfDays;
                 const extraDayAddition = perDaySalary * extraDays;
-                const calculatedOvertimePay = perHourSalary * overtimeHours; // Calculate final pay
+                const overtimePay = perHourSalary * overtimeHours; // New overtime logic
 
-                const totalEarnings = baseSalary + extraDayAddition + calculatedOvertimePay + otherAddition;
+                const totalEarnings = baseSalary + extraDayAddition + overtimePay + otherAddition;
                 const totalDeductions = absentDeduction + halfDayDeduction + advancePayment + otherDeduction;
                 
                 const netPay = totalEarnings - totalDeductions;
@@ -2199,19 +2240,20 @@
                     return amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
                 };
 
-                // --- Store data for PDF generation AND saving ---
-                // (This object is now our complete record)
+                // --- Store data for PDF generation ---
                 lastCalculationData = {
                     employeeName, month, year,
                     
                     baseSalary, // Store raw number
                     extraDayAddition, // Store raw number
-                    overtimePay: calculatedOvertimePay, // Store the CALCULATED amount
-                    overtimeHours: overtimeHours, // Store the raw hours
+                    overtimeHours, // Store OT hours
+                    overtimePay, // Store raw number
                     otherAddition, // Store raw number
                     totalEarnings, // Store raw number
                     
+                    absentDays, // Store count
                     absentDeduction, // Store raw number
+                    halfDays, // Store count
                     halfDayDeduction, // Store raw number
                     advancePayment, // Store raw number
                     otherDeduction, // Store raw number
@@ -2225,18 +2267,10 @@
                     extraDayDates,
                     
                     otherAdditionRemark,
+                    advancePaymentRemark,
                     otherDeductionRemark
                 };
-
-                // --- Save or Update in Firestore ---
-                await saveSalaryRecord(lastCalculationData); // This function now handles both new and update
                 
-                // If this was an edit, reset the form
-                if (recordToEditId) {
-                    resetMainForm();
-                }
-
-
                 // --- Populate Summary Section ---
                 document.getElementById('summaryEmployee').textContent = employeeName || "N/A";
                 document.getElementById('summaryMonth').textContent = `For ${month}, ${year}`;
@@ -2256,14 +2290,18 @@
                     summaryExtraDayDatesEl.textContent = '';
                 }
                 
-                document.getElementById('summaryOvertime').textContent = `+ ${formatCurrency(calculatedOvertimePay)}`;
+                document.getElementById('summaryOvertime').textContent = `+ ${formatCurrency(overtimePay)}`;
+                const summaryOvertimeHoursEl = document.getElementById('summaryOvertimeHours');
                 if (overtimeHours > 0) {
-                    summaryOvertimeHoursEl.textContent = `(${overtimeHours} hours)`;
+                    summaryOvertimeHoursEl.textContent = `(${overtimeHours} hrs)`;
                     summaryOvertimeHoursEl.classList.remove('hidden');
                 } else {
                     summaryOvertimeHoursEl.classList.add('hidden');
+                    summaryOvertimeHoursEl.textContent = '';
                 }
-
+                
+                document.getElementById('summaryOtherAddition').textContent = `+ ${formatCurrency(otherAddition)}`;
+                
                 const summaryOtherAdditionRemark = document.getElementById('summaryOtherAdditionRemark');
                 if (otherAdditionRemark) {
                     summaryOtherAdditionRemark.textContent = `"${otherAdditionRemark}"`;
@@ -2301,16 +2339,25 @@
                 }
                 
                 document.getElementById('summaryAdvance').textContent = `- ${formatCurrency(advancePayment)}`;
+                const summaryAdvanceRemark = document.getElementById('summaryAdvanceRemark');
+                if (advancePaymentRemark) {
+                    summaryAdvanceRemark.textContent = `"${advancePaymentRemark}"`;
+                    summaryAdvanceRemark.classList.remove('hidden');
+                } else {
+                    summaryAdvanceRemark.classList.add('hidden');
+                    summaryAdvanceRemark.textContent = '';
+                }
+                
                 document.getElementById('summaryOtherDeduction').textContent = `- ${formatCurrency(otherDeduction)}`;
                 document.getElementById('summaryTotalDeductions').textContent = formatCurrency(totalDeductions);
                 
                 const summaryOtherDeductionRemark = document.getElementById('summaryOtherDeductionRemark');
-                 if (otherDeductionRemark) { 
-                    summaryOtherDeductionRemark.textContent = `"${otherDeductionRemark}"`;
-                    summaryOtherDeductionRemark.classList.remove('hidden');
+                 if (otherDeductionRemark) {
+                     summaryOtherDeductionRemark.textContent = `"${otherDeductionRemark}"`;
+                     summaryOtherDeductionRemark.classList.remove('hidden');
                 } else {
-                    summaryOtherDeductionRemark.classList.add('hidden');
-                    summaryOtherDeductionRemark.textContent = ''; // Clear content
+                     summaryOtherDeductionRemark.classList.add('hidden');
+                     summaryOtherDeductionRemark.textContent = ''; // Clear content
                 }
 
                 // Net Pay
@@ -2322,32 +2369,19 @@
                 // Scroll to the summary
                 document.getElementById('summarySection').scrollIntoView({ behavior: 'smooth' });
             });
-        
-        } // --- END of setupApp() ---
-
-
-        // --- Initial Page Load ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- App Lock Logic ---
-            const handleUnlock = () => {
-                if (appLockPasswordInput.value === '911311') {
-                    // Correct PIN
-                    appLockModal.classList.add('opacity-0', 'pointer-events-none'); // Hide lock
-                    mainAppContainer.classList.remove('hidden'); // Show app
-                    setupApp(); // Run all the app setup
+            
+            // --- Save Record Listener ---
+            saveRecordButton.addEventListener('click', () => {
+                if (lastCalculationData) {
+                    saveSalaryRecord(lastCalculationData);
                 } else {
-                    // Incorrect PIN
-                    appLockError.classList.remove('hidden');
-                    appLockPasswordInput.value = '';
-                }
-            };
-
-            unlockAppBtn.addEventListener('click', handleUnlock);
-            appLockPasswordInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    handleUnlock();
+                    saveStatus.textContent = "Please calculate pay first.";
+                    setTimeout(() => saveStatus.textContent = "", 2000);
                 }
             });
+            
+            // --- Cancel Edit Listener ---
+            cancelEditButton.addEventListener('click', resetToCalculateMode);
         });
     </script>
 
