@@ -879,6 +879,9 @@
                             <button class="delete-record-btn bg-red-100 text-red-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-red-200" data-id="${record.id}" data-name="${record.employeeName}">
                                 Delete
                             </button>
+                            <button class="download-record-pdf-btn bg-green-100 text-green-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-green-200" data-id="${record.id}">
+                                PDF
+                            </button>
                         </div>
                     </div>
                 `;
@@ -2097,6 +2100,17 @@
                 const editBtn = e.target.closest('.edit-record-btn');
                 if (editBtn) {
                     loadRecordForEdit(editBtn.dataset.id);
+                }
+                
+                const pdfBtn = e.target.closest('.download-record-pdf-btn');
+                if (pdfBtn) {
+                    const recordId = pdfBtn.dataset.id;
+                    const recordToDownload = salaryRecords.find(r => r.id === recordId);
+                    if (recordToDownload) {
+                        generatePdf(recordToDownload);
+                    } else {
+                        console.error("Could not find record to download:", recordId);
+                    }
                 }
             });
             cancelRecordDeleteBtn.addEventListener('click', () => hideModal(confirmRecordDeleteModal));
