@@ -1356,11 +1356,29 @@
             onSnapshot(q, (snapshot) => {
                 salaryRecords = snapshot.docs.map(doc => {
                     const data = doc.data();
+                    let createdAtDate = null; // Default to null
+
+                    if (data.createdAt) {
+                        // Check if it's a Firestore Timestamp (new data)
+                        if (typeof data.createdAt.toDate === 'function') {
+                            createdAtDate = data.createdAt.toDate();
+                        } 
+                        // Check if it's a string (potentially old data)
+                        else if (typeof data.createdAt === 'string') {
+                            createdAtDate = new Date(data.createdAt);
+                            // If string is invalid, reset to null
+                            if (isNaN(createdAtDate.getTime())) {
+                                createdAtDate = null;
+                            }
+                        }
+                    }
+                    // If data.createdAt is missing, it remains null
+
                     return {
                         id: doc.id,
                         ...data,
-                        // Convert Firestore Timestamp back to JS Date
-                        createdAt: data.createdAt ? data.createdAt.toDate() : new Date() 
+                        // This is now either a valid Date object or null
+                        createdAt: createdAtDate 
                     };
                 });
 
