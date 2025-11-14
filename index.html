@@ -813,56 +813,13 @@
          * Renders the fetched salary records on the Salary Data page.
          */
         function renderSalaryRecords() {
-            // 1. Get filter values
-            const nameFilter = filterEmployeeName.value;
-            const monthFilter = filterMonth.value;
-            const yearFilter = filterYear.value;
-
-            // 2. Filter the global salaryRecords array
-            const filteredRecords = salaryRecords.filter(record => {
-                // PRIMARY FILTER: Only show records for the current mode
-                const modeMatch = record.createdByMode === currentMode;
-                
-                // Secondary filters from user
-                const nameMatch = !nameFilter || record.employeeName === nameFilter;
-                const monthMatch = !monthFilter || record.month === monthFilter;
-                const yearMatch = !yearFilter || record.year == yearFilter; // Use '==' for string/number
-                
-                return modeMatch && nameMatch && monthMatch && yearMatch;
-            });
-
-            // 3. Render the *filtered* array
-            salaryRecordsContainer.innerHTML = ''; // Clear existing
-            
-            if (filteredRecords.length === 0) {
-                // Show a helpful message
-                if (salaryRecords.length === 0) {
-                    noRecordsText.textContent = "No salary records found.";
-                } else {
-                    noRecordsText.textContent = "No salary records match your filters in this mode.";
-                }
-                noRecordsText.classList.remove('hidden');
-                return;
-            }
-            
-            noRecordsText.classList.add('hidden');
-            
-            // PDF-safe currency formatter
-            const formatPdfCurrency = (amount) => {
-                const fixedAmount = (amount || 0).toFixed(2);
-                const parts = fixedAmount.split('.');
-                let integerPart = parts[0];
-                const decimalPart = parts[1];
-                integerPart = integerPart.replace(/(\d)(?=(\d\d)+\d$)/g, "$1,");
-                return `Rs. ${integerPart}.${decimalPart}`;
-            };
-
+            // ... existing code ... -->
             filteredRecords.forEach(record => { // Use filteredRecords
                 const card = document.createElement('div');
                 card.className = "bg-white p-4 rounded-lg shadow-sm border flex flex-col sm:flex-row justify-between items-start";
                 
                 // Use the JS Date object created when saving
-                const recordDate = record.createdAt ? record.createdAt.toLocaleDateString('en-IN') : 'N/A';
+                const recordDate = record.createdAt ? record.createdAt.toLocaleString('en-IN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A';
 
                 card.innerHTML = `
                     <div class="mb-4 sm:mb-0">
@@ -2203,62 +2160,13 @@
             // --- Calculation Logic ---
             calculateButton.addEventListener('click', function() {
                 
-                // --- Get Input Values ---
-                const employeeName = document.getElementById('employeeName').value;
-                const month = document.getElementById('month').value;
-                const year = document.getElementById('year').value;
-
-                if (!employeeName) {
-                    saveStatus.textContent = "Please select an employee.";
-                    setTimeout(() => saveStatus.textContent = "", 2000);
-                    return;
-                }
-                
-                // Parse all numerical inputs, defaulting to 0 if empty
-                const baseSalary = parseFloat(document.getElementById('baseSalary').value) || 0;
-                const absentDays = parseFloat(document.getElementById('absentDays').value) || 0; // This now gets the count
-                const absentDates = JSON.parse(document.getElementById('absentDays').dataset.dates || '[]');
-                const halfDays = parseFloat(document.getElementById('halfDays').value) || 0;
-                const halfDayDates = JSON.parse(document.getElementById('halfDays').dataset.dates || '[]');
-                const extraDays = parseFloat(document.getElementById('extraDays').value) || 0;
-                const extraDayDates = JSON.parse(document.getElementById('extraDays').dataset.dates || '[]');
-                
-                const overtimeHours = parseFloat(document.getElementById('overtimeHours').value) || 0;
-                const otherAddition = parseFloat(document.getElementById('otherAddition').value) || 0;
-                const otherAdditionRemark = document.getElementById('otherAdditionRemark').value.trim();
-                
-                const advancePayment = parseFloat(document.getElementById('advancePayment').value) || 0;
-                const advancePaymentRemark = document.getElementById('advancePaymentRemark').value.trim();
-                const otherDeduction = parseFloat(document.getElementById('otherDeduction').value) || 0;
-                const otherDeductionRemark = document.getElementById('otherDeductionRemark').value.trim();
-
-                // --- Perform Calculations ---
-                
-                // Calculate per-day salary. Assuming 30 days in a month as requested.
-                const perDaySalary = baseSalary > 0 ? (baseSalary / 30) : 0;
-                // Calculate per-hour salary. Assuming 9 hours per day.
-                const perHourSalary = perDaySalary > 0 ? (perDaySalary / 9) : 0;
-
-                const absentDeduction = perDaySalary * absentDays;
-                const halfDayDeduction = (perDaySalary / 2) * halfDays;
-                const extraDayAddition = perDaySalary * extraDays;
-                const overtimePay = perHourSalary * overtimeHours; // New overtime logic
-
-                const totalEarnings = baseSalary + extraDayAddition + overtimePay + otherAddition;
-                const totalDeductions = absentDeduction + halfDayDeduction + advancePayment + otherDeduction;
-                
-                const netPay = totalEarnings - totalDeductions;
-
-                // --- Helper to Format Currency ---
-                const formatCurrency = (amount) => {
-                    return amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
-                };
-
+                // ... existing code ... -->
                 // --- Store data for PDF generation ---
                 lastCalculationData = {
                     employeeName, month, year,
                     
                     baseSalary, // Store raw number
+                    extraDays, // <<< THIS WAS THE MISSING LINE
                     extraDayAddition, // Store raw number
                     overtimeHours, // Store OT hours
                     overtimePay, // Store raw number
