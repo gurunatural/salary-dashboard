@@ -813,7 +813,46 @@
          * Renders the fetched salary records on the Salary Data page.
          */
         function renderSalaryRecords() {
-            // ... existing code ... -->
+            // 1. Get filter values
+            const nameFilter = filterEmployeeName.value;
+            const monthFilter = filterMonth.value;
+            const yearFilter = filterYear.value;
+
+            // 2. Filter the global salaryRecords array
+            const filteredRecords = salaryRecords.filter(record => {
+                const modeMatch = record.createdByMode === currentMode;
+                const nameMatch = !nameFilter || record.employeeName === nameFilter;
+                const monthMatch = !monthFilter || record.month === monthFilter;
+                const yearMatch = !yearFilter || record.year == yearFilter; // Use '==' for string/number
+                
+                return modeMatch && nameMatch && monthMatch && yearMatch;
+            });
+
+            // 3. Render the *filtered* array
+            salaryRecordsContainer.innerHTML = ''; // Clear existing
+            
+            if (filteredRecords.length === 0) {
+                if (salaryRecords.length === 0) {
+                    noRecordsText.textContent = "No salary records found.";
+                } else {
+                    noRecordsText.textContent = `No salary records found for this mode${nameFilter || monthFilter || yearFilter ? ' with current filters' : ''}.`;
+                }
+                noRecordsText.classList.remove('hidden');
+                return;
+            }
+            
+            noRecordsText.classList.add('hidden');
+            
+            // PDF-safe currency formatter
+            const formatPdfCurrency = (amount) => {
+                const fixedAmount = (amount || 0).toFixed(2);
+                const parts = fixedAmount.split('.');
+                let integerPart = parts[0];
+                const decimalPart = parts[1];
+                integerPart = integerPart.replace(/(\d)(?=(\d\d)+\d$)/g, "$1,");
+                return `Rs. ${integerPart}.${decimalPart}`;
+            };
+
             filteredRecords.forEach(record => { // Use filteredRecords
                 const card = document.createElement('div');
                 card.className = "bg-white p-4 rounded-lg shadow-sm border flex flex-col sm:flex-row justify-between items-start";
