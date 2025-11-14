@@ -2217,13 +2217,64 @@
             // --- Calculation Logic ---
             calculateButton.addEventListener('click', function() {
                 
-                // ... existing code ... -->
+                // --- Get Input Values ---
+                const employeeName = document.getElementById('employeeName').value;
+                const month = document.getElementById('month').value;
+                const year = document.getElementById('year').value;
+
+                if (!employeeName) {
+                    saveStatus.textContent = "Please select an employee.";
+                    setTimeout(() => saveStatus.textContent = "", 2000);
+                    return;
+                }
+                
+                // Parse all numerical inputs, defaulting to 0 if empty
+                const baseSalary = parseFloat(document.getElementById('baseSalary').value) || 0;
+                
+                const absentDays = parseFloat(absentDaysInput.value) || 0;
+                const absentDates = JSON.parse(absentDaysInput.dataset.dates || '[]');
+                const halfDays = parseFloat(halfDaysInput.value) || 0;
+                const halfDayDates = JSON.parse(halfDaysInput.dataset.dates || '[]');
+                const extraDays = parseFloat(extraDaysInput.value) || 0;
+                const extraDayDates = JSON.parse(extraDaysInput.dataset.dates || '[]');
+                
+                const overtimeHours = parseFloat(document.getElementById('overtimeHours').value) || 0;
+                const otherAddition = parseFloat(document.getElementById('otherAddition').value) || 0;
+                const otherAdditionRemark = document.getElementById('otherAdditionRemark').value;
+                
+                const advancePayment = parseFloat(document.getElementById('advancePayment').value) || 0;
+                const advancePaymentRemark = document.getElementById('advancePaymentRemark').value;
+                const otherDeduction = parseFloat(document.getElementById('otherDeduction').value) || 0;
+                const otherDeductionRemark = document.getElementById('otherDeductionRemark').value;
+
+                // --- Perform Calculations ---
+                
+                // Calculate per-day salary. Assuming 30 days in a month.
+                const perDaySalary = baseSalary > 0 ? (baseSalary / 30) : 0;
+                // Calculate per-hour salary. Assuming 9-hour work day.
+                const perHourSalary = perDaySalary > 0 ? (perDaySalary / 9) : 0;
+
+                const absentDeduction = perDaySalary * absentDays;
+                const halfDayDeduction = (perDaySalary / 2) * halfDays;
+                const extraDayAddition = perDaySalary * extraDays;
+                const overtimePay = perHourSalary * overtimeHours;
+
+                const totalEarnings = baseSalary + extraDayAddition + overtimePay + otherAddition;
+                const totalDeductions = absentDeduction + halfDayDeduction + advancePayment + otherDeduction;
+                
+                const netPay = totalEarnings - totalDeductions;
+
+                // --- Helper to Format Currency ---
+                const formatCurrency = (amount) => {
+                    return amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
+                };
+
                 // --- Store data for PDF generation ---
                 lastCalculationData = {
                     employeeName, month, year,
                     
                     baseSalary, // Store raw number
-                    extraDays, // <<< THIS WAS THE MISSING LINE
+                    extraDays, // Store count
                     extraDayAddition, // Store raw number
                     overtimeHours, // Store OT hours
                     overtimePay, // Store raw number
