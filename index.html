@@ -10,6 +10,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Load Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <!-- Load Marked.js for AI Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- Set base font -->
     <style>
         body {
@@ -75,11 +77,19 @@
         .tab-btn.active {
             @apply bg-blue-600 text-white shadow-md hover:bg-blue-700;
         }
+
+        /* AI Insight Styles */
+        .ai-content h1, .ai-content h2, .ai-content h3 { @apply font-bold mt-4 mb-2 text-gray-900; }
+        .ai-content h1 { @apply text-2xl; }
+        .ai-content h2 { @apply text-xl; }
+        .ai-content p { @apply mb-3 text-gray-700 leading-relaxed; }
+        .ai-content ul { @apply list-disc pl-5 mb-4 space-y-1 text-gray-700; }
+        .ai-content strong { @apply text-blue-700; }
     </style>
 </head>
 <body class="bg-gray-100">
 
-    <!-- Dashboard Lock Screen Modal (NEW) -->
+    <!-- Dashboard Lock Screen Modal -->
     <div id="dashboardLockModal" class="modal fixed inset-0 z-[100] flex items-center justify-center bg-gray-900">
         <div class="modal-content bg-white w-full max-w-sm p-6 rounded-xl shadow-2xl">
             <h3 class="text-2xl font-semibold text-gray-900 mb-4 text-center">Enter PIN</h3>
@@ -92,25 +102,25 @@
         </div>
     </div>
 
-    <!-- Main App Container (NEW WRAPPER) -->
+    <!-- Main App Container -->
     <div id="mainAppContainer" class="hidden">
 
         <!-- Header: Tab Navigation & Mode Switch -->
         <div class="bg-white shadow-sm sticky top-0 z-40 p-5">
-            <div class="container mx-auto max-w-4xl flex justify-between items-center">
-                <nav class="flex gap-6">
-                    <button id="dashboardTab" class="tab-btn active">
-                        Salary Dashboard
+            <div class="container mx-auto max-w-4xl flex justify-between items-center text-center sm:text-left flex-col sm:flex-row gap-4">
+                <nav class="flex gap-2 sm:gap-6">
+                    <button id="dashboardTab" class="tab-btn active text-sm sm:text-xl px-4 sm:px-8">
+                        Salary
                     </button>
-                    <button id="salaryDataTab" class="tab-btn">
-                        Salary Data
+                    <button id="salaryDataTab" class="tab-btn text-sm sm:text-xl px-4 sm:px-8">
+                        Records
                     </button>
-                    <button id="analysisTab" class="tab-btn">
+                    <button id="analysisTab" class="tab-btn text-sm sm:text-xl px-4 sm:px-8">
                         Analysis
                     </button>
                 </nav>
                 <div class="flex items-center">
-                    <button id="modeSwitchBtn" data-mode="accountant" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-200 shadow-md">
+                    <button id="modeSwitchBtn" data-mode="accountant" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-200 shadow-md whitespace-nowrap">
                         Switch to Owner Mode
                     </button>
                 </div>
@@ -123,7 +133,7 @@
             
                 <!-- Logo -->
                 <div class="flex justify-center mb-6">
-                    <img src="https://i.postimg.cc/rsRFnMMc/1002397847-removebg-preview-1.png" alt="Company Logo" class="h-20 w-auto"
+                    <img id="dashboardCompanyLogo" src="https://i.postimg.cc/rsRFnMMc/1002397847-removebg-preview-1.png" alt="Company Logo" class="h-20 w-auto"
                          onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
                     <!-- Fallback text if image fails to load -->
                     <div class="hidden text-gray-500 text-center">Logo could not be loaded</div>
@@ -142,11 +152,10 @@
                         <div>
                             <div class="flex justify-between items-center mb-1">
                                 <label for="employeeName" class="block text-sm font-medium text-gray-700">Employee Name</label>
-                                <button id="manageEmployeesBtn" class="text-xs text-blue-600 hover:text-blue-800 font-medium">Manage</button>
+                                <button id="manageEmployeesBtn" class="hidden text-xs text-blue-600 hover:text-blue-800 font-medium">Manage</button>
                             </div>
                             <select id="employeeName" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Select Employee</option>
-                                <!-- Options will be populated by JS from Firestore -->
                             </select>
                         </div>
                         <div>
@@ -169,7 +178,7 @@
                         <div>
                             <label for="year" class="block text-sm font-medium text-gray-700 mb-1">Select Year</label>
                             <select id="year" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <!-- Options will be populated by JS -->
+                                <!-- Options populated by JS -->
                             </select>
                         </div>
                     </div>
@@ -262,7 +271,7 @@
                                     <label for="otherDeduction" class="block text-sm font-medium text-gray-700 mb-1">Other Deduction</label>
                                     <div class="flex">
                                         <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">₹</span>
-                                        <input type="number" id="otherDeduction" placeholder="0.00" class="w-full px-4 py-2 border border-gray-300 rounded-r-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <input type="number" id="otherDeduction" placeholder="0.00" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     </div>
                                 </div>
                             </div>
@@ -279,7 +288,6 @@
                         </div>
                     </div>
     
-    
                     <!-- Row 5: Calculate Button -->
                     <div class="border-t border-gray-200 pt-8">
                         <div class="flex gap-4">
@@ -294,7 +302,7 @@
                     </div>
                 </div>
     
-                <!-- Summary Section (Hidden by default) -->
+                <!-- Summary Section -->
                 <div id="summarySection" class="hidden mt-10 border-t border-gray-300 pt-8">
                     <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 text-center">
                         Pay Summary
@@ -305,6 +313,7 @@
                             <div>
                                 <div class="text-lg font-semibold text-gray-800" id="summaryEmployee"></div>
                                 <div class="text-sm text-gray-500" id="summaryMonth"></div>
+                                <div class="text-xs text-blue-600 italic mt-1" id="summaryDesignation"></div>
                             </div>
                             <div class="text-right">
                                 <div class="text-sm text-gray-500">Pay Summary</div>
@@ -313,8 +322,6 @@
                         </div>
     
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            
-                            <!-- Earnings Column -->
                             <div class="bg-white p-4 rounded-lg shadow-sm border">
                                 <h3 class="font-bold text-lg text-green-700 mb-3 border-b pb-2">Earnings</h3>
                                 <div class="space-y-2">
@@ -337,15 +344,12 @@
                                         <span class="font-medium text-gray-900" id="summaryOtherAddition"></span>
                                     </div>
                                     <div id="summaryOtherAdditionRemark" class="text-xs text-gray-500 italic pl-4"></div>
-                                    
                                     <div class="flex justify-between font-bold border-t pt-2 mt-2">
                                         <span class="text-gray-800">Total Earnings:</span>
                                         <span class="text-green-600" id="summaryTotalEarnings"></span>
                                     </div>
                                 </div>
                             </div>
-    
-                            <!-- Deductions Column -->
                             <div class="bg-white p-4 rounded-lg shadow-sm border">
                                 <h3 class="font-bold text-lg text-red-700 mb-3 border-b pb-2">Deductions</h3>
                                 <div class="space-y-2">
@@ -369,7 +373,6 @@
                                         <span class="font-medium text-gray-900" id="summaryOtherDeduction"></span>
                                     </div>
                                     <div id="summaryOtherDeductionRemark" class="text-xs text-gray-500 italic pl-4"></div>
-    
                                     <div class="flex justify-between font-bold border-t pt-2 mt-2">
                                         <span class="text-gray-800">Total Deductions:</span>
                                         <span class="text-red-600" id="summaryTotalDeductions"></span>
@@ -377,72 +380,58 @@
                                 </div>
                             </div>
                         </div>
-    
-                        <!-- Net Pay -->
                         <div class="mt-6 bg-blue-100 border border-blue-200 p-4 rounded-lg flex justify-between items-center text-xl sm:text-2xl font-bold">
                             <span class="text-blue-800">Net Pay:</span>
                             <span class="text-blue-700" id="summaryNetPay"></span>
                         </div>
-    
-                        <!-- Action Buttons -->
-                        <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <button id="saveRecordButton" class="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200 shadow-md">
+                        
+                        <div class="mt-8 flex flex-col sm:flex-row gap-4">
+                            <button id="saveRecordButton" class="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-semibold text-lg hover:bg-green-700 transition duration-200 shadow-md">
                                 Save Record
                             </button>
-                            <button id="downloadPdfButton" class="w-full bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold text-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-200 shadow-md">
-                                Download as PDF
+                            <button id="downloadPdfButton" class="flex-1 bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold text-lg hover:bg-gray-700 transition duration-200 shadow-md">
+                                PDF
+                            </button>
+                            <button id="summaryWhatsAppBtn" class="flex-1 bg-green-500 text-white py-3 px-6 rounded-lg font-semibold text-lg hover:bg-green-600 transition duration-200 shadow-md flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.06 3.973l-1.127 4.113 4.209-1.103a7.882 7.882 0 0 0 3.792.98h.004c4.367 0 7.926-3.558 7.93-7.93a7.856 7.856 0 0 0-2.33-5.64zM7.994 14.125a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
+                                </svg>
+                                WhatsApp
                             </button>
                         </div>
                     </div>
-    
                 </div>
             </div>
         </div>
 
-        <!-- Page 2: Salary Data (Hidden by default) -->
+        <!-- Page 2: Salary Data -->
         <div id="salaryDataPage" class="hidden container mx-auto max-w-4xl p-4 sm:p-8">
             <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl">
                 <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-6 text-center">
                     Saved Salary Data
                 </h1>
-    
-                <!-- Filter Controls -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-lg border">
                     <div>
                         <label for="filterEmployeeName" class="block text-sm font-medium text-gray-700 mb-1">Filter by Employee</label>
                         <select id="filterEmployeeName" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">All Employees</option>
-                            <!-- Populated by JS from Firestore -->
                         </select>
                     </div>
                     <div>
                         <label for="filterMonth" class="block text-sm font-medium text-gray-700 mb-1">Filter by Month</label>
                         <select id="filterMonth" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">All Months</option>
-                            <option>January</option>
-                            <option>February</option>
-                            <option>March</option>
-                            <option>April</option>
-                            <option>May</option>
-                            <option>June</option>
-                            <option>July</option>
-                            <option>August</option>
-                            <option>September</option>
-                            <option>October</option>
-                            <option>November</option>
-                            <option>December</option>
+                            <option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option>
+                            <option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option>
                         </select>
                     </div>
                     <div>
                         <label for="filterYear" class="block text-sm font-medium text-gray-700 mb-1">Filter by Year</label>
                         <select id="filterYear" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">All Years</option>
-                            <!-- Populated by JS from Firestore data -->
                         </select>
                     </div>
                 </div>
-                
-                <!-- CSV Export Button -->
                 <div class="mb-6 flex justify-end">
                     <button id="exportCsvButton" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-200 shadow-md flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -451,132 +440,150 @@
                         Export to CSV
                     </button>
                 </div>
-                
                 <div id="salaryRecordsContainer" class="space-y-4">
-                    <!-- Salary records will be populated here by JS -->
                     <p id="noRecordsText" class="text-gray-500 text-center italic">Loading records...</p>
                 </div>
             </div>
         </div>
 
-        <!-- Page 3: Analysis (Hidden by default) -->
+        <!-- Page 3: Analysis -->
         <div id="analysisPage" class="hidden container mx-auto max-w-4xl p-4 sm:p-8">
             <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl">
                 <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-6 text-center">
                     Salary Data Analysis
                 </h1>
+
+                <!-- Analysis Filter Controls -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg border">
+                    <div>
+                        <label for="analysisFilterEmployeeName" class="block text-sm font-medium text-gray-700 mb-1">Filter by Employee</label>
+                        <select id="analysisFilterEmployeeName" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">All Employees</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="analysisFilterMonth" class="block text-sm font-medium text-gray-700 mb-1">Filter by Month</label>
+                        <select id="analysisFilterMonth" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">All Months</option>
+                            <option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option>
+                            <option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="analysisFilterYear" class="block text-sm font-medium text-gray-700 mb-1">Filter by Year</label>
+                        <select id="analysisFilterYear" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">All Years</option>
+                        </select>
+                    </div>
+                </div>
     
                 <div id="analysisContent" class="space-y-6">
-                    
-                    <!-- Chart Section -->
                     <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-md">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4" id="analysisChartTitle">Total Salary Paid Per Month (Current Mode)</h3>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4" id="analysisChartTitle">Total Salary Paid Per Month</h3>
                         <div class="relative h-64 sm:h-80">
                             <canvas id="myChart"></canvas>
                         </div>
                     </div>
     
-                    <!-- Stat Cards Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        
-                        <!-- Total Distributed -->
+                        <div class="bg-indigo-600 p-6 rounded-xl shadow-lg text-white">
+                            <h3 class="text-sm font-medium uppercase tracking-wider opacity-80">Total Salary Given (Advance + Remainder)</h3>
+                            <p class="text-4xl font-bold mt-2" id="analysisTotalSalaryGiven">₹0.00</p>
+                        </div>
+                        <div class="bg-orange-500 p-6 rounded-xl shadow-lg text-white">
+                            <h3 class="text-sm font-medium uppercase tracking-wider opacity-80">Total Advance Given</h3>
+                            <p class="text-4xl font-bold mt-2" id="analysisTotalAdvanceGiven">₹0.00</p>
+                        </div>
+                        <div class="bg-red-600 p-6 rounded-xl shadow-lg text-white">
+                            <h3 class="text-sm font-medium uppercase tracking-wider opacity-80">Total Deductions</h3>
+                            <p class="text-4xl font-bold mt-2" id="analysisTotalDeductionsCard">₹0.00</p>
+                        </div>
                         <div class="bg-blue-50 p-6 rounded-xl border border-blue-200 shadow-md">
-                            <h3 class="text-sm font-medium text-blue-600 uppercase tracking-wide">Total Salary Distributed (All Modes)</h3>
+                            <h3 class="text-sm font-medium text-blue-600 uppercase tracking-wide">Total Salary Distributed (Net Pay)</h3>
                             <p class="text-4xl font-bold text-blue-800 mt-2" id="analysisTotalDistributed">₹0.00</p>
                         </div>
-    
-                        <!-- Total Payslips -->
                         <div class="bg-green-50 p-6 rounded-xl border border-green-200 shadow-md">
-                            <h3 class="text-sm font-medium text-green-600 uppercase tracking-wide">Total Payslips Issued (All Modes)</h3>
+                            <h3 class="text-sm font-medium text-green-600 uppercase tracking-wide">Total Payslips Issued</h3>
                             <p class="text-4xl font-bold text-green-800 mt-2" id="analysisTotalPayslips">0</p>
                         </div>
-    
-                        <!-- Average Pay -->
                         <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-200 shadow-md">
-                            <h3 class="text-sm font-medium text-indigo-600 uppercase tracking-wide">Average Net Pay (All Modes)</h3>
+                            <h3 class="text-sm font-medium text-indigo-600 uppercase tracking-wide">Average Net Pay</h3>
                             <p class="text-4xl font-bold text-indigo-800 mt-2" id="analysisAveragePay">₹0.00</p>
                         </div>
-    
-                        <!-- Highest Single Payslip -->
                         <div class="bg-yellow-50 p-6 rounded-xl border border-yellow-200 shadow-md">
-                            <h3 class="text-sm font-medium text-yellow-600 uppercase tracking-wide">Highest Single Payslip (All Modes)</h3>
+                            <h3 class="text-sm font-medium text-yellow-600 uppercase tracking-wide">Highest Single Payslip</h3>
                             <p class="text-4xl font-bold text-yellow-800 mt-2" id="analysisHighestPayslipAmount">₹0.00</p>
                             <p class="text-sm text-gray-600 mt-1" id="analysisHighestPayslipEmployee">N/A</p>
                         </div>
-    
-                        <!-- Most Leave Taken -->
                         <div class="bg-red-50 p-6 rounded-xl border border-red-200 shadow-md">
-                            <h3 class="text-sm font-medium text-red-600 uppercase tracking-wide">Most Leave Taken (Current Mode)</h3>
+                            <h3 class="text-sm font-medium text-red-600 uppercase tracking-wide">Most Leave Taken (Mode)</h3>
                             <p class="text-4xl font-bold text-red-800 mt-2" id="analysisMostLeave">0 days</p>
                             <p class="text-sm text-gray-600 mt-1" id="analysisMostLeaveEmployee">N/A</p>
                         </div>
-    
-                        <!-- Most Active Worker -->
                         <div class="bg-green-50 p-6 rounded-xl border border-green-200 shadow-md">
-                            <h3 class="text-sm font-medium text-green-600 uppercase tracking-wide">Most Active Worker (Least Leave)</h3>
+                            <h3 class="text-sm font-medium text-green-600 uppercase tracking-wide">Most Active Worker</h3>
                             <p class="text-4xl font-bold text-green-800 mt-2" id="analysisMostActive">0 days</p>
                             <p class="text-sm text-gray-600 mt-1" id="analysisMostActiveEmployee">N/A</p>
                         </div>
                     </div>
-    
-                    <!-- Financial Summary -->
-                    <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-md">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Financial Summary (All Modes)</h3>
-                        <div class="flex justify-around items-center">
-                            <div class="text-center">
-                                <p class="text-sm font-medium text-green-600 uppercase">Total Earnings</p>
-                                <p class="text-2xl font-bold text-green-700" id="analysisTotalEarnings">₹0.00</p>
+
+                    <!-- AI Insights Section -->
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-indigo-200 shadow-lg mt-8">
+                        <div class="flex justify-between items-center mb-4">
+                            <div class="flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                <h3 class="text-lg font-bold text-indigo-900 uppercase tracking-tight">AI Business Insights</h3>
                             </div>
-                            <div class="text-center">
-                                <p class="text-sm font-medium text-red-600 uppercase">Total Deductions</p>
-                                <p class="text-2xl font-bold text-red-700" id="analysisTotalDeductions">₹0.00</p>
-                            </div>
+                            <button id="getAiInsightsBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-200 shadow-md flex items-center gap-2 text-sm">
+                                Generate Insights
+                            </button>
+                        </div>
+                        <div id="aiInsightsContainer" class="ai-content bg-white p-6 rounded-lg border border-indigo-100 min-h-[100px] text-gray-500 italic">
+                            Click 'Generate Insights' to analyze your payroll data using Gemini AI.
                         </div>
                     </div>
     
-                    <!-- Top Paid Employees -->
                     <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-md">
                         <h3 class="text-lg font-semibold text-gray-800 mb-4">Total Pay by Employee (Current Mode)</h3>
                         <ul class="space-y-3 max-h-60 overflow-y-auto" id="analysisEmployeeTotalsList">
-                            <!-- Employee totals will be populated here -->
                         </ul>
                     </div>
                 </div>
-                
                 <p id="noAnalysisDataText" class="text-gray-500 text-center italic hidden">No salary data found to analyze.</p>
-    
             </div>
         </div>
-    </div> <!-- End of #mainAppContainer -->
+    </div>
 
-
-    <!-- Employee Management Modal -->
+    <!-- Modals -->
     <div id="employeeModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 opacity-0 pointer-events-none">
         <div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-gray-800" id="employeeModalTitle">Manage Employees</h2>
                 <button id="closeEmployeeModal" class="text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
             </div>
-            
-            <!-- List of Employees -->
             <div id="employeeListContainer" class="max-h-60 overflow-y-auto space-y-2 mb-4 pr-2">
-                <!-- Employee items will be populated by JS from Firestore -->
                 <p class="text-gray-500 text-sm italic">Loading employees...</p>
             </div>
-
-            <!-- Add/Edit Employee Form -->
             <div class="border-t pt-4">
                 <h3 class="text-lg font-semibold text-gray-800 mb-2" id="employeeFormTitle">Add New Employee</h3>
                 <div class="space-y-3">
-                    <div>
-                        <label for="newEmployeeName" class="block text-sm font-medium text-gray-700 mb-1">Employee Name</label>
-                        <input type="text" id="newEmployeeName" placeholder="Enter name" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label for="newEmployeeSalary" class="block text-sm font-medium text-gray-700 mb-1">Default Base Salary</label>
-                        <div class="flex">
-                            <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">₹</span>
-                            <input type="number" id="newEmployeeSalary" placeholder="e.g., 30000" class="w-full px-4 py-2 border border-gray-300 rounded-r-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <div class="grid grid-cols-1 gap-3">
+                        <div>
+                            <label for="newEmployeeName" class="block text-sm font-medium text-gray-700 mb-1">Employee Name</label>
+                            <input type="text" id="newEmployeeName" placeholder="Enter name" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="newEmployeeDesignation" class="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+                            <input type="text" id="newEmployeeDesignation" placeholder="e.g., Senior Accountant" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="newEmployeeSalary" class="block text-sm font-medium text-gray-700 mb-1">Default Base Salary</label>
+                            <div class="flex">
+                                <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm">₹</span>
+                                <input type="number" id="newEmployeeSalary" placeholder="e.g., 30000" class="w-full px-4 py-2 border border-gray-300 rounded-r-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
                         </div>
                     </div>
                     <div class="flex gap-2">
@@ -590,7 +597,7 @@
         </div>
     </div>
 
-    <!-- Confirm Employee Delete Modal -->
+    <!-- Confirm and Other Modals -->
     <div id="confirmDeleteModal" class="modal fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50 opacity-0 pointer-events-none">
         <div class="modal-content bg-white w-full max-w-sm p-6 rounded-xl shadow-2xl transform scale-95">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Confirm Deletion</h3>
@@ -601,8 +608,6 @@
             </div>
         </div>
     </div>
-    
-    <!-- Confirm Record Delete Modal -->
     <div id="confirmRecordDeleteModal" class="modal fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50 opacity-0 pointer-events-none">
         <div class="modal-content bg-white w-full max-w-sm p-6 rounded-xl shadow-2xl transform scale-95">
             <h3 class="text-lg font-semibold text-gray-900 mb-2">Confirm Record Deletion</h3>
@@ -613,27 +618,19 @@
             </div>
         </div>
     </div>
-
-    <!-- Calendar Modal -->
     <div id="calendarModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 opacity-0 pointer-events-none">
         <div class="modal-content bg-white w-full max-w-md p-6 rounded-xl shadow-2xl transform scale-95">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-gray-800" id="calendarHeader">Select Dates</h2>
                 <button id="closeCalendarModal" class="text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
             </div>
-            
-            <div class="calendar-grid mb-4" id="calendarGrid">
-                <!-- Calendar will be built here by JS -->
-            </div>
-
+            <div class="calendar-grid mb-4" id="calendarGrid"></div>
             <div class="flex justify-end gap-3">
                 <button id="cancelCalendarBtn" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300">Cancel</button>
                 <button id="saveCalendarBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Save Dates</button>
             </div>
         </div>
     </div>
-
-    <!-- Password Modal -->
     <div id="passwordModal" class="modal fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50 opacity-0 pointer-events-none">
         <div class="modal-content bg-white w-full max-w-sm p-6 rounded-xl shadow-2xl transform scale-95">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Enter Owner Password</h3>
@@ -646,36 +643,14 @@
         </div>
     </div>
 
-    <!-- Firebase and App Logic -->
+    <!-- Scripts -->
     <script type="module">
-        // --- Firebase SDK Imports ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { 
-            getAuth, 
-            signInAnonymously, 
-            signInWithCustomToken, 
-            onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            getDoc, 
-            addDoc, 
-            setDoc, 
-            updateDoc, 
-            deleteDoc, 
-            onSnapshot, 
-            collection, 
-            query, 
-            where, 
-            getDocs,
-            Timestamp,
-            setLogLevel
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, Timestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- Firebase Config and Global Vars ---
+        const apiKey = ""; // Provided at runtime
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        // Use user-provided config as a fallback
         const userFirebaseConfig = {
             apiKey: "AIzaSyCMppXprg2OJswgLSXmmPgyhaRhxwDp0NA",
             authDomain: "salarymanagement-7f0ec.firebaseapp.com",
@@ -687,1097 +662,150 @@
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : JSON.stringify(userFirebaseConfig));
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        let db, auth;
-        let userId;
-        let employeesCollection, salaryRecordsCollection;
+        let db, auth, userId, employeesCollection, salaryRecordsCollection;
+        let salaryRecords = [], employees = [], employeeToDelete = null, recordToDeleteId = null, lastCalculationData = null, currentEditingRecordId = null, currentMode = "accountant", chartInstance = null;
 
-        // --- App State ---
-        let salaryRecords = []; // Will be populated from Firestore
-        let employees = []; // Will be populated from Firestore
-        let employeeToDelete = null; // Stores {id, name}
-        let recordToDeleteId = null; // Stores ID of salary record to delete
-        let lastCalculationData = null; // To store data for PDF generation
-        let currentEditingRecordId = null; // To track if we are in edit mode
-        let currentMode = "accountant"; // 'accountant' or 'owner'
-        let chartInstance = null; // To hold the Chart.js instance
+        const employeeSelect = document.getElementById('employeeName'), manageEmployeesBtn = document.getElementById('manageEmployeesBtn'), employeeModal = document.getElementById('employeeModal');
+        const employeeListContainer = document.getElementById('employeeListContainer'), newEmployeeNameInput = document.getElementById('newEmployeeName'), newEmployeeSalaryInput = document.getElementById('newEmployeeSalary'), newEmployeeDesignationInput = document.getElementById('newEmployeeDesignation'), addEmployeeBtn = document.getElementById('addEmployeeBtn'), updateEmployeeBtn = document.getElementById('updateEmployeeBtn'), cancelEmployeeUpdateBtn = document.getElementById('cancelEmployeeUpdateBtn'), employeeFormTitle = document.getElementById('employeeFormTitle'), employeeError = document.getElementById('employeeError');
+        const confirmDeleteModal = document.getElementById('confirmDeleteModal'), employeeToDeleteName = document.getElementById('employeeToDeleteName'), cancelDeleteBtn = document.getElementById('cancelDeleteBtn'), confirmDeleteBtn = document.getElementById('confirmDeleteBtn'), confirmRecordDeleteModal = document.getElementById('confirmRecordDeleteModal'), recordToDeleteName = document.getElementById('recordToDeleteName'), cancelRecordDeleteBtn = document.getElementById('cancelRecordDeleteBtn'), confirmRecordDeleteBtn = document.getElementById('confirmRecordDeleteBtn');
+        const calendarModal = document.getElementById('calendarModal'), openAbsentCalendarBtn = document.getElementById('openAbsentCalendar'), openHalfDayCalendarBtn = document.getElementById('openHalfDayCalendar'), openExtraDayCalendarBtn = document.getElementById('openExtraDayCalendar'), closeCalendarModalBtn = document.getElementById('closeCalendarModal'), cancelCalendarBtn = document.getElementById('cancelCalendarBtn'), saveCalendarBtn = document.getElementById('saveCalendarBtn'), calendarGrid = document.getElementById('calendarGrid'), calendarHeader = document.getElementById('calendarHeader'), absentDaysInput = document.getElementById('absentDays'), halfDaysInput = document.getElementById('halfDays'), extraDaysInput = document.getElementById('extraDays'), downloadPdfButton = document.getElementById('downloadPdfButton'), saveStatus = document.getElementById('saveStatus'), calculateButton = document.getElementById('calculateButton'), cancelEditButton = document.getElementById('cancelEditButton'), saveRecordButton = document.getElementById('saveRecordButton');
+        const dashboardTab = document.getElementById('dashboardTab'), salaryDataTab = document.getElementById('salaryDataTab'), dashboardPage = document.getElementById('dashboardPage'), salaryDataPage = document.getElementById('salaryDataPage'), salaryRecordsContainer = document.getElementById('salaryRecordsContainer'), noRecordsText = document.getElementById('noRecordsText'), exportCsvButton = document.getElementById('exportCsvButton');
+        const analysisTab = document.getElementById('analysisTab'), analysisPage = document.getElementById('analysisPage'), analysisContent = document.getElementById('analysisContent'), noAnalysisDataText = document.getElementById('noAnalysisDataText'), analysisTotalDistributed = document.getElementById('analysisTotalDistributed'), analysisTotalPayslips = document.getElementById('analysisTotalPayslips'), analysisAveragePay = document.getElementById('analysisAveragePay'), analysisHighestPayslipAmount = document.getElementById('analysisHighestPayslipAmount'), analysisHighestPayslipEmployee = document.getElementById('analysisHighestPayslipEmployee'), analysisEmployeeTotalsList = document.getElementById('analysisEmployeeTotalsList'), analysisChartTitle = document.getElementById('analysisChartTitle'), analysisMostLeave = document.getElementById('analysisMostLeave'), analysisMostLeaveEmployee = document.getElementById('analysisMostLeaveEmployee'), analysisMostActive = document.getElementById('analysisMostActive'), analysisMostActiveEmployee = document.getElementById('analysisMostActiveEmployee');
+        const analysisTotalSalaryGiven = document.getElementById('analysisTotalSalaryGiven'), analysisTotalAdvanceGiven = document.getElementById('analysisTotalAdvanceGiven'), analysisTotalDeductionsCard = document.getElementById('analysisTotalDeductionsCard');
+        const filterEmployeeName = document.getElementById('filterEmployeeName'), filterMonth = document.getElementById('filterMonth'), filterYear = document.getElementById('filterYear');
+        const analysisFilterEmployeeName = document.getElementById('analysisFilterEmployeeName');
+        const analysisFilterMonth = document.getElementById('analysisFilterMonth');
+        const analysisFilterYear = document.getElementById('analysisFilterYear');
+        const summaryWhatsAppBtn = document.getElementById('summaryWhatsAppBtn');
+        const getAiInsightsBtn = document.getElementById('getAiInsightsBtn');
+        const aiInsightsContainer = document.getElementById('aiInsightsContainer');
 
-        // --- DOM Elements ---
-        const employeeSelect = document.getElementById('employeeName');
-        const manageEmployeesBtn = document.getElementById('manageEmployeesBtn');
-        const employeeModal = document.getElementById('employeeModal');
-        const closeEmployeeModal = document.getElementById('closeEmployeeModal');
-        const employeeListContainer = document.getElementById('employeeListContainer');
-        const newEmployeeNameInput = document.getElementById('newEmployeeName');
-        const newEmployeeSalaryInput = document.getElementById('newEmployeeSalary');
-        const addEmployeeBtn = document.getElementById('addEmployeeBtn');
-        const updateEmployeeBtn = document.getElementById('updateEmployeeBtn');
-        const cancelEmployeeUpdateBtn = document.getElementById('cancelEmployeeUpdateBtn');
-        const employeeFormTitle = document.getElementById('employeeFormTitle');
-        const employeeError = document.getElementById('employeeError');
-        
-        const confirmDeleteModal = document.getElementById('confirmDeleteModal');
-        const employeeToDeleteName = document.getElementById('employeeToDeleteName');
-        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
-        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-        
-        const confirmRecordDeleteModal = document.getElementById('confirmRecordDeleteModal');
-        const recordToDeleteName = document.getElementById('recordToDeleteName');
-        const cancelRecordDeleteBtn = document.getElementById('cancelRecordDeleteBtn');
-        const confirmRecordDeleteBtn = document.getElementById('confirmRecordDeleteBtn');
+        const modeSwitchBtn = document.getElementById('modeSwitchBtn'), passwordModal = document.getElementById('passwordModal'), passwordInput = document.getElementById('passwordInput'), passwordError = document.getElementById('passwordError'), cancelPasswordBtn = document.getElementById('cancelPasswordBtn'), submitPasswordBtn = document.getElementById('submitPasswordBtn');
+        const dashboardLockModal = document.getElementById('dashboardLockModal'), lockPinInput = document.getElementById('lockPinInput'), unlockDashboardBtn = document.getElementById('unlockDashboardBtn'), lockError = document.getElementById('lockError'), mainAppContainer = document.getElementById('mainAppContainer');
 
-        // --- Calendar Modal Elements ---
-        const calendarModal = document.getElementById('calendarModal');
-        const openAbsentCalendarBtn = document.getElementById('openAbsentCalendar');
-        const openHalfDayCalendarBtn = document.getElementById('openHalfDayCalendar');
-        const openExtraDayCalendarBtn = document.getElementById('openExtraDayCalendar');
-        const closeCalendarModalBtn = document.getElementById('closeCalendarModal');
-        const cancelCalendarBtn = document.getElementById('cancelCalendarBtn');
-        const saveCalendarBtn = document.getElementById('saveCalendarBtn');
-        const calendarGrid = document.getElementById('calendarGrid');
-        const calendarHeader = document.getElementById('calendarHeader');
-        const absentDaysInput = document.getElementById('absentDays');
-        const halfDaysInput = document.getElementById('halfDays');
-        const extraDaysInput = document.getElementById('extraDays');
-        const downloadPdfButton = document.getElementById('downloadPdfButton');
-        const saveStatus = document.getElementById('saveStatus');
-        const calculateButton = document.getElementById('calculateButton');
-        const cancelEditButton = document.getElementById('cancelEditButton');
-        const saveRecordButton = document.getElementById('saveRecordButton');
-
-        // --- Tab Navigation Elements ---
-        const dashboardTab = document.getElementById('dashboardTab');
-        const salaryDataTab = document.getElementById('salaryDataTab');
-        const dashboardPage = document.getElementById('dashboardPage');
-        const salaryDataPage = document.getElementById('salaryDataPage');
-        const salaryRecordsContainer = document.getElementById('salaryRecordsContainer');
-        const noRecordsText = document.getElementById('noRecordsText');
-        const exportCsvButton = document.getElementById('exportCsvButton');
-
-        // --- Page 3: Analysis Elements ---
-        const analysisTab = document.getElementById('analysisTab');
-        const analysisPage = document.getElementById('analysisPage');
-        const analysisContent = document.getElementById('analysisContent');
-        const noAnalysisDataText = document.getElementById('noAnalysisDataText');
-        const analysisTotalDistributed = document.getElementById('analysisTotalDistributed');
-        const analysisTotalPayslips = document.getElementById('analysisTotalPayslips');
-        const analysisAveragePay = document.getElementById('analysisAveragePay');
-        const analysisHighestPayslipAmount = document.getElementById('analysisHighestPayslipAmount');
-        const analysisHighestPayslipEmployee = document.getElementById('analysisHighestPayslipEmployee');
-        const analysisTotalEarnings = document.getElementById('analysisTotalEarnings');
-        const analysisTotalDeductions = document.getElementById('analysisTotalDeductions');
-        const analysisEmployeeTotalsList = document.getElementById('analysisEmployeeTotalsList');
-        const analysisChartTitle = document.getElementById('analysisChartTitle');
-        const analysisMostLeave = document.getElementById('analysisMostLeave');
-        const analysisMostLeaveEmployee = document.getElementById('analysisMostLeaveEmployee');
-        const analysisMostActive = document.getElementById('analysisMostActive');
-        const analysisMostActiveEmployee = document.getElementById('analysisMostActiveEmployee');
-
-        // --- Filter Elements ---
-        const filterEmployeeName = document.getElementById('filterEmployeeName');
-        const filterMonth = document.getElementById('filterMonth');
-        const filterYear = document.getElementById('filterYear');
-        
-        // --- Mode Switch Elements ---
-        const modeSwitchBtn = document.getElementById('modeSwitchBtn');
-        const passwordModal = document.getElementById('passwordModal');
-        const passwordInput = document.getElementById('passwordInput');
-        const passwordError = document.getElementById('passwordError');
-        const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
-        const submitPasswordBtn = document.getElementById('submitPasswordBtn');
-
-        // --- Lock Screen Elements (NEW) ---
-        const dashboardLockModal = document.getElementById('dashboardLockModal');
-        const lockPinInput = document.getElementById('lockPinInput');
-        const unlockDashboardBtn = document.getElementById('unlockDashboardBtn');
-        const lockError = document.getElementById('lockError');
-        const mainAppContainer = document.getElementById('mainAppContainer');
-
-        // --- Calendar State ---
-        let tempSelectedDates = [];
-        let currentCalendarInput = null;
-        let currentEmployeeEditingId = null;
+        let tempSelectedDates = [], currentCalendarInput = null, currentEmployeeEditingId = null;
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-        // --- Modal Utility Functions ---
-        const showModal = (modal) => {
-            modal.classList.remove('opacity-0', 'pointer-events-none');
-            modal.querySelector('.modal-content').classList.remove('scale-95');
-        };
+        const showModal = (modal) => { modal.classList.remove('opacity-0', 'pointer-events-none'); modal.querySelector('.modal-content').classList.remove('scale-95'); };
+        const hideModal = (modal) => { modal.classList.add('opacity-0', 'pointer-events-none'); modal.querySelector('.modal-content').classList.add('scale-95'); };
 
-        const hideModal = (modal) => {
-            modal.classList.add('opacity-0', 'pointer-events-none');
-            modal.querySelector('.modal-content').classList.add('scale-95');
-        };
+        function formatInCurrency(amount) {
+            const parts = (amount || 0).toFixed(2).split('.');
+            parts[0] = parts[0].replace(/(\d)(?=(\d\d)+\d$)/g, "$1,");
+            return `Rs. ${parts.join('.')}`;
+        }
 
         /**
-         * Renders the fetched salary records on the Salary Data page.
+         * AI Insight Generator
          */
+        async function fetchAIInsights() {
+            const currentFiltRecords = salaryRecords.filter(r => {
+                const nameMatch = !analysisFilterEmployeeName.value || r.employeeName === analysisFilterEmployeeName.value;
+                const monthMatch = !analysisFilterMonth.value || r.month === analysisFilterMonth.value;
+                const yearMatch = !analysisFilterYear.value || r.year == analysisFilterYear.value;
+                return r.createdByMode === currentMode && nameMatch && monthMatch && yearMatch;
+            });
+
+            if (currentFiltRecords.length === 0) {
+                aiInsightsContainer.textContent = "No data available to analyze. Please adjust filters.";
+                return;
+            }
+
+            const dataSummary = currentFiltRecords.map(r => ({
+                emp: r.employeeName,
+                desig: r.designation || 'Staff',
+                per: `${r.month} ${r.year}`,
+                net: r.netPay,
+                adv: r.advancePayment || 0,
+                abs: r.absentDays || 0,
+                extra: r.extraDays || 0,
+                ot: r.overtimeHours || 0
+            }));
+
+            const systemPrompt = `You are a professional financial and HR analyst for GURU NATURALS AND AGRO INDUSTRIES. 
+            Analyze the provided payroll data and give deep insights. 
+            Identify:
+            1. Employee attendance patterns (who is absent often vs most active).
+            2. Salary trends (increasing/decreasing payouts).
+            3. Efficiency (who works extra days or overtime).
+            4. Business advice for the owner based on this data.
+            Keep the tone professional, concise, and helpful. Use Markdown for formatting.`;
+
+            const userQuery = `Analyze this payroll data for the current period: ${JSON.stringify(dataSummary)}`;
+
+            aiInsightsContainer.innerHTML = '<div class="flex items-center gap-2"><div class="animate-spin h-5 w-5 border-2 border-indigo-600 border-t-transparent rounded-full"></div> Analyzing business data...</div>';
+            getAiInsightsBtn.disabled = true;
+
+            const makeApiCall = async (retryCount = 0) => {
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: userQuery }] }],
+                            systemInstruction: { parts: [{ text: systemPrompt }] }
+                        })
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 429 && retryCount < 5) {
+                            const delay = Math.pow(2, retryCount) * 1000;
+                            await new Promise(r => setTimeout(r, delay));
+                            return makeApiCall(retryCount + 1);
+                        }
+                        throw new Error(`API returned ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!text) throw new Error("No response from AI");
+                    return text;
+
+                } catch (err) {
+                    if (retryCount < 5) {
+                        const delay = Math.pow(2, retryCount) * 1000;
+                        await new Promise(r => setTimeout(r, delay));
+                        return makeApiCall(retryCount + 1);
+                    }
+                    throw err;
+                }
+            };
+
+            try {
+                const insightText = await makeApiCall();
+                aiInsightsContainer.innerHTML = marked.parse(insightText);
+            } catch (err) {
+                console.error(err);
+                aiInsightsContainer.textContent = "AI Analysis failed. Please check your connection or try again later.";
+            } finally {
+                getAiInsightsBtn.disabled = false;
+            }
+        }
+
+        /**
+         * WhatsApp Message Logic
+         */
+        function sendWhatsAppNotification(record) {
+            const r = record || lastCalculationData;
+            if (!r) return;
+
+            const text = `*Salary Payout Notification*\n\n` +
+                         `*Employee:* ${r.employeeName}\n` +
+                         `*Designation:* ${r.designation || 'Staff'}\n` +
+                         `*Period:* ${r.month} ${r.year}\n` +
+                         `--------------------------\n` +
+                         `*Total Earnings:* ${formatInCurrency(r.totalEarnings)}\n` +
+                         `*Total Deductions:* ${formatInCurrency(r.totalDeductions)}\n` +
+                         `--------------------------\n` +
+                         `*Net Pay (Remainder):* ${formatInCurrency(r.netPay)}\n\n` +
+                         `_Thank you for your hard work!_`;
+            
+            const encodedText = encodeURIComponent(text);
+            window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+        }
+
         function renderSalaryRecords() {
-            // 1. Get filter values
-            const nameFilter = filterEmployeeName.value;
-            const monthFilter = filterMonth.value;
-            const yearFilter = filterYear.value;
-
-            // 2. Filter the global salaryRecords array
-            const filteredRecords = salaryRecords.filter(record => {
-                const modeMatch = record.createdByMode === currentMode;
-                const nameMatch = !nameFilter || record.employeeName === nameFilter;
-                const monthMatch = !monthFilter || record.month === monthFilter;
-                const yearMatch = !yearFilter || record.year == yearFilter; // Use '==' for string/number
-                
-                return modeMatch && nameMatch && monthMatch && yearMatch;
-            });
-
-            // 3. Render the *filtered* array
-            salaryRecordsContainer.innerHTML = ''; // Clear existing
-            
-            if (filteredRecords.length === 0) {
-                if (salaryRecords.length === 0) {
-                    noRecordsText.textContent = "No salary records found.";
-                } else {
-                    noRecordsText.textContent = `No salary records found for this mode${nameFilter || monthFilter || yearFilter ? ' with current filters' : ''}.`;
-                }
-                noRecordsText.classList.remove('hidden');
-                return;
-            }
-            
-            noRecordsText.classList.add('hidden');
-            
-            // PDF-safe currency formatter
-            const formatPdfCurrency = (amount) => {
-                const fixedAmount = (amount || 0).toFixed(2);
-                const parts = fixedAmount.split('.');
-                let integerPart = parts[0];
-                const decimalPart = parts[1];
-                integerPart = integerPart.replace(/(\d)(?=(\d\d)+\d$)/g, "$1,");
-                return `Rs. ${integerPart}.${decimalPart}`;
-            };
-
-            filteredRecords.forEach(record => { // Use filteredRecords
-                const card = document.createElement('div');
-                card.className = "bg-white p-4 rounded-lg shadow-sm border flex flex-col sm:flex-row justify-between items-start";
-                
-                // Use the JS Date object created when saving
-                const recordDate = record.createdAt ? record.createdAt.toLocaleString('en-IN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A';
-
-                card.innerHTML = `
-                    <div class="mb-4 sm:mb-0">
-                        <h3 class="text-lg font-semibold text-gray-800">${record.employeeName}</h3>
-                        <p class="text-sm text-gray-600">For ${record.month}, ${record.year}</p>
-                        <p class="text-xs text-gray-400">Saved on: ${recordDate}</p>
-                    </div>
-                    <div class="flex flex-col items-start sm:items-end w-full sm:w-auto">
-                        <span class="text-xl font-bold text-blue-700">${formatPdfCurrency(record.netPay)}</span>
-                        <div class="flex gap-2 mt-2">
-                            <button class="edit-record-btn bg-blue-100 text-blue-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-blue-200" data-id="${record.id}">
-                                Edit
-                            </button>
-                            <button class="delete-record-btn bg-red-100 text-red-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-red-200" data-id="${record.id}" data-name="${record.employeeName}">
-                                Delete
-                            </button>
-                            <button class="download-record-pdf-btn bg-green-100 text-green-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-green-200" data-id="${record.id}">
-                                PDF
-                            </button>
-                        </div>
-                    </div>
-                `;
-                salaryRecordsContainer.appendChild(card);
-            });
-        }
-
-        /**
-         * Calculates and renders the analysis page.
-         */
-        function renderAnalysis() {
-            // PDF-safe currency formatter
-            const formatPdfCurrency = (amount) => {
-                const fixedAmount = (amount || 0).toFixed(2);
-                const parts = fixedAmount.split('.');
-                let integerPart = parts[0];
-                const decimalPart = parts[1];
-                integerPart = integerPart.replace(/(\d)(?=(\d\d)+\d$)/g, "$1,");
-                return `Rs. ${integerPart}.${decimalPart}`;
-            };
-
-            // Use ALL records for main stats, regardless of mode
-            const allRecords = salaryRecords;
-            // Use MODE-SPECIFIC records for detailed lists and charts
-            const modeRecords = salaryRecords.filter(r => r.createdByMode === currentMode);
-
-            if (allRecords.length === 0) {
-                analysisContent.classList.add('hidden');
-                noAnalysisDataText.classList.remove('hidden');
-                return;
-            }
-
-            analysisContent.classList.remove('hidden');
-            noAnalysisDataText.classList.add('hidden');
-
-            // --- Perform Calculations ---
-
-            // 1. Total Salary Distributed (All Modes)
-            const totalDistributed = allRecords.reduce((acc, r) => acc + (r.netPay || 0), 0);
-            
-            // 2. Total Payslips (All Modes)
-            const totalPayslips = allRecords.length;
-
-            // 3. Average Pay (All Modes)
-            const averagePay = totalPayslips > 0 ? (totalDistributed / totalPayslips) : 0;
-
-            // 4. Highest Single Payslip (All Modes)
-            const highestPayslip = allRecords.reduce((max, r) => (r.netPay > max.netPay) ? r : max, { netPay: -Infinity });
-
-            // 5. Total Earnings vs Deductions (All Modes)
-            const totalEarnings = allRecords.reduce((acc, r) => acc + (r.totalEarnings || 0), 0);
-            const totalDeductions = allRecords.reduce((acc, r) => acc + (r.totalDeductions || 0), 0);
-
-            // 6. Total Pay by Employee (CURRENT MODE ONLY)
-            const employeeTotals = modeRecords.reduce((acc, r) => {
-                const name = r.employeeName;
-                if (!acc[name]) {
-                    acc[name] = 0;
-                }
-                acc[name] += (r.netPay || 0);
-                return acc;
-            }, {});
-
-            const sortedEmployeeTotals = Object.entries(employeeTotals)
-                .map(([name, total]) => ({ name, total }))
-                .sort((a, b) => b.total - a.total); // Sort descending
-
-            // 7. Attendance Analysis (CURRENT MODE ONLY)
-            const employeeAttendance = modeRecords.reduce((acc, r) => {
-                const name = r.employeeName;
-                if (!acc[name]) {
-                    acc[name] = 0;
-                }
-                // Leave = full absent days + 0.5 for each half day
-                const leave = (r.absentDays || 0) + ((r.halfDays || 0) * 0.5);
-                acc[name] += leave;
-                return acc;
-            }, {});
-
-            const sortedAttendance = Object.entries(employeeAttendance)
-                .map(([name, totalLeaveDays]) => ({ name, totalLeaveDays }))
-                .sort((a, b) => b.totalLeaveDays - a.totalLeaveDays); // Sort descending
-
-            let mostLeave = null;
-            let mostActive = null;
-
-            if (sortedAttendance.length > 0) {
-                mostLeave = sortedAttendance[0];
-                mostActive = sortedAttendance[sortedAttendance.length - 1]; // Last item is the lowest
-            }
-
-
-            // 8. Monthly Totals for Chart (CURRENT MODE ONLY)
-            const monthlyTotals = modeRecords.reduce((acc, r) => {
-                const monthIndex = monthNames.indexOf(r.month);
-                const key = `${r.year}-${String(monthIndex).padStart(2, '0')}`; // e.g., "2025-09"
-                if (!acc[key]) {
-                    acc[key] = { total: 0, label: `${r.month.substring(0, 3)} ${r.year}` };
-                }
-                acc[key].total += (r.netPay || 0);
-                return acc;
-            }, {});
-
-            const sortedMonthlyTotals = Object.entries(monthlyTotals)
-                .map(([key, data]) => ({ key, ...data }))
-                .sort((a, b) => a.key.localeCompare(b.key)); // Sort chronologically
-
-
-            // --- Update DOM ---
-            analysisTotalDistributed.textContent = formatPdfCurrency(totalDistributed);
-            analysisTotalPayslips.textContent = totalPayslips;
-            analysisAveragePay.textContent = formatPdfCurrency(averagePay);
-
-            if (highestPayslip.netPay > -Infinity) {
-                analysisHighestPayslipAmount.textContent = formatPdfCurrency(highestPayslip.netPay);
-                analysisHighestPayslipEmployee.textContent = `To ${highestPayslip.employeeName} for ${highestPayslip.month}, ${highestPayslip.year}`;
-            } else {
-                analysisHighestPayslipAmount.textContent = "N/A";
-                analysisHighestPayslipEmployee.textContent = "";
-            }
-
-            analysisTotalEarnings.textContent = formatPdfCurrency(totalEarnings);
-            analysisTotalDeductions.textContent = formatPdfCurrency(totalDeductions);
-
-            // Update new attendance cards
-            if (mostLeave && mostLeave.totalLeaveDays > 0) {
-                analysisMostLeave.textContent = `${mostLeave.totalLeaveDays} days`;
-                analysisMostLeaveEmployee.textContent = mostLeave.name;
-            } else {
-                analysisMostLeave.textContent = "0 days";
-                analysisMostLeaveEmployee.textContent = "N/A";
-            }
-
-            if (mostActive) {
-                analysisMostActive.textContent = `${mostActive.totalLeaveDays} days`;
-                analysisMostActiveEmployee.textContent = mostActive.name;
-            } else {
-                analysisMostActive.textContent = "0 days";
-                analysisMostActiveEmployee.textContent = "N/A";
-            }
-
-            // Populate employee list
-            analysisEmployeeTotalsList.innerHTML = '';
-            if (sortedEmployeeTotals.length > 0) {
-                sortedEmployeeTotals.forEach(emp => {
-                    const li = document.createElement('li');
-                    li.className = "flex justify-between items-center p-3 bg-gray-50 rounded-lg border";
-                    li.innerHTML = `
-                        <span class="font-medium text-gray-700">${emp.name}</span>
-                        <span class="font-bold text-gray-900">${formatPdfCurrency(emp.total)}</span>
-                    `;
-                    analysisEmployeeTotalsList.appendChild(li);
-                });
-            } else {
-                analysisEmployeeTotalsList.innerHTML = `<li class="text-gray-500 italic">No employee data to show in ${currentMode} mode.</li>`;
-            }
-            
-            // Update Chart Title
-            analysisChartTitle.textContent = `Total Salary Paid Per Month (${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)} Mode)`;
-            
-            // Render Chart
-            const chartLabels = sortedMonthlyTotals.map(m => m.label);
-            const chartData = sortedMonthlyTotals.map(m => m.total);
-            
-            const ctx = document.getElementById('myChart').getContext('2d');
-            
-            if (chartInstance) {
-                chartInstance.destroy(); // Destroy old chart before creating new one
-            }
-            
-            chartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: chartLabels,
-                    datasets: [{
-                        label: 'Total Salary Paid',
-                        data: chartData,
-                        backgroundColor: 'rgba(59, 130, 246, 0.5)', // bg-blue-500 with opacity
-                        borderColor: 'rgba(59, 130, 246, 1)', // border-blue-500
-                        borderWidth: 1,
-                        borderRadius: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '₹' + value.toLocaleString('en-IN');
-                                }
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
-                                    }
-                                    if (context.parsed.y !== null) {
-                                        label += context.parsed.y.toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
-                                    }
-                                    return label;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-
-        // --- Employee Data Functions (Firestore) ---
-
-        /**
-         * Populates all employee dropdowns from the global 'employees' array.
-         */
-        function renderEmployeeSelect() {
-            const currentSelection = employeeSelect.value;
-            const currentFilterSelection = filterEmployeeName.value; // Save filter selection
-            
-            employeeSelect.innerHTML = '<option value="">Select Employee</option>';
-            filterEmployeeName.innerHTML = '<option value="">All Employees</option>'; // Add default
-            
-            // Sort by name
-            const sortedEmployees = [...employees].sort((a, b) => a.name.localeCompare(b.name)); 
-            
-            sortedEmployees.forEach(emp => {
-                // For dashboard dropdown
-                const option = document.createElement('option');
-                option.value = emp.name;
-                option.textContent = emp.name;
-                option.dataset.salary = emp.baseSalary || ""; // Store salary
-                if (emp.name === currentSelection) {
-                    option.selected = true;
-                }
-                employeeSelect.appendChild(option);
-
-                // For filter dropdown
-                const filterOption = document.createElement('option');
-                filterOption.value = emp.name;
-                filterOption.textContent = emp.name;
-                if (emp.name === currentFilterSelection) { // Restore filter selection
-                    filterOption.selected = true;
-                }
-                filterEmployeeName.appendChild(filterOption);
-            });
-        }
-
-        /**
-         * Renders the list in the 'Manage Employees' modal.
-         */
-        function renderEmployeeManagementList() {
-            employeeListContainer.innerHTML = '';
-            if (employees.length === 0) {
-                employeeListContainer.innerHTML = '<p class="text-gray-500 text-sm italic">No employees added.</p>';
-                return;
-            }
-            
-            // Sort by name
-            const sortedEmployees = [...employees].sort((a, b) => a.name.localeCompare(b.name)); 
-
-            sortedEmployees.forEach(emp => {
-                const div = document.createElement('div');
-                div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg border';
-                const salaryDisplay = emp.baseSalary ? `(₹${emp.baseSalary.toLocaleString('en-IN')})` : '(No Salary Set)';
-                div.innerHTML = `
-                    <div>
-                        <span class="text-gray-800 font-medium">${emp.name}</span>
-                        <span class="text-gray-500 text-sm ml-2">${salaryDisplay}</span>
-                    </div>
-                    <div class="flex gap-2">
-                        <button class="edit-employee-btn text-blue-600 hover:text-blue-800 font-medium" data-id="${emp.id}" data-name="${emp.name}" data-salary="${emp.baseSalary || ''}">Edit</button>
-                        <button class="delete-employee-btn text-red-500 hover:text-red-700 font-medium" data-id="${emp.id}" data-name="${emp.name}">Delete</button>
-                    </div>
-                `;
-                employeeListContainer.appendChild(div);
-            });
-        }
-        
-        /**
-         * Resets the employee management form to 'Add' mode.
-         */
-        function resetEmployeeForm() {
-            currentEmployeeEditingId = null;
-            employeeFormTitle.textContent = "Add New Employee";
-            newEmployeeNameInput.value = "";
-            newEmployeeSalaryInput.value = "";
-            addEmployeeBtn.classList.remove('hidden');
-            updateEmployeeBtn.classList.add('hidden');
-            cancelEmployeeUpdateBtn.classList.add('hidden');
-            employeeError.classList.add('hidden');
-        }
-
-        /**
-         * Adds a new employee to Firestore.
-         */
-        async function addEmployee() {
-            const name = newEmployeeNameInput.value.trim();
-            const baseSalary = parseFloat(newEmployeeSalaryInput.value) || 0;
-            
-            if (!name) {
-                employeeError.textContent = 'Please enter a name.';
-                employeeError.classList.remove('hidden');
-                return;
-            }
-            if (employees.some(emp => emp.name.toLowerCase() === name.toLowerCase())) {
-                employeeError.textContent = 'This employee already exists.';
-                employeeError.classList.remove('hidden');
-                return;
-            }
-
-            try {
-                addEmployeeBtn.disabled = true;
-                addEmployeeBtn.textContent = "Adding...";
-                const docRef = await addDoc(employeesCollection, {
-                    name: name,
-                    baseSalary: baseSalary,
-                    createdAt: Timestamp.now()
-                });
-                console.log("Employee added with ID: ", docRef.id);
-                
-                resetEmployeeForm(); // Reset form after successful add
-                
-                // Also clear the main form to avoid confusion
-                clearForm();
-                document.getElementById('summarySection').classList.add('hidden');
-                
-            } catch (error) {
-                console.error("Error adding employee:", error);
-                employeeError.textContent = "Error adding employee. Please try again.";
-                employeeError.classList.remove('hidden');
-            } finally {
-                addEmployeeBtn.disabled = false;
-                addEmployeeBtn.textContent = "Add Employee";
-            }
-        }
-        
-        /**
-         * Updates an existing employee in Firestore.
-         */
-        async function updateEmployee() {
-            const name = newEmployeeNameInput.value.trim();
-            const baseSalary = parseFloat(newEmployeeSalaryInput.value) || 0;
-
-            if (!name || !currentEmployeeEditingId) {
-                employeeError.textContent = 'An error occurred. Please try again.';
-                employeeError.classList.remove('hidden');
-                return;
-            }
-            
-            // Check if name already exists (and it's not the employee we are editing)
-            if (employees.some(emp => emp.name.toLowerCase() === name.toLowerCase() && emp.id !== currentEmployeeEditingId)) {
-                employeeError.textContent = 'This employee name already exists.';
-                employeeError.classList.remove('hidden');
-                return;
-            }
-            
-            try {
-                updateEmployeeBtn.disabled = true;
-                updateEmployeeBtn.textContent = "Updating...";
-                
-                const docRef = doc(db, employeesCollection.path, currentEmployeeEditingId);
-                await updateDoc(docRef, {
-                    name: name,
-                    baseSalary: baseSalary
-                });
-                
-                console.log("Employee updated successfully:", name);
-                resetEmployeeForm();
-                
-            } catch (error) {
-                console.error("Error updating employee:", error);
-                employeeError.textContent = "Error updating employee. Please try again.";
-                employeeError.classList.remove('hidden');
-            } finally {
-                updateEmployeeBtn.disabled = false;
-                updateEmployeeBtn.textContent = "Update Employee";
-            }
-        }
-        
-        /**
-         * Deletes an employee from Firestore.
-         */
-        async function confirmDeleteEmployee() {
-            if (!employeeToDelete) {
-                console.error("No employee selected for deletion.");
-                hideModal(confirmDeleteModal);
-                return;
-            }
-
-            confirmDeleteBtn.disabled = true;
-            confirmDeleteBtn.textContent = "Deleting...";
-
-            try {
-                const docRef = doc(db, employeesCollection.path, employeeToDelete.id);
-                await deleteDoc(docRef);
-                console.log("Employee deleted successfully:", employeeToDelete.name);
-            } catch (error) {
-                console.error("Error deleting employee:", error);
-            } finally {
-                hideModal(confirmDeleteModal);
-                employeeToDelete = null;
-                confirmDeleteBtn.disabled = false;
-                confirmDeleteBtn.textContent = "Delete";
-                // List will auto-update thanks to onSnapshot
-            }
-        }
-        
-        /**
-         * Deletes a salary record from Firestore.
-         */
-        async function confirmDeleteRecord() {
-            if (!recordToDeleteId) {
-                console.error("No record selected for deletion.");
-                hideModal(confirmRecordDeleteModal);
-                return;
-            }
-
-            confirmRecordDeleteBtn.disabled = true;
-            confirmRecordDeleteBtn.textContent = "Deleting...";
-
-            try {
-                const docRef = doc(db, salaryRecordsCollection.path, recordToDeleteId);
-                await deleteDoc(docRef);
-                console.log("Record deleted successfully:", recordToDeleteId);
-            } catch (error) {
-                console.error("Error deleting record:", error);
-            } finally {
-                hideModal(confirmRecordDeleteModal);
-                recordToDeleteId = null;
-                confirmRecordDeleteBtn.disabled = false;
-                confirmRecordDeleteBtn.textContent = "Delete";
-                // List will auto-update thanks to onSnapshot
-            }
-        }
-        
-        /**
-         * Saves or updates the calculated salary record to Firestore.
-         */
-        async function saveSalaryRecord(recordData) {
-            try {
-                saveRecordButton.disabled = true;
-                
-                const newRecord = {
-                    ...recordData,
-                    createdByMode: currentMode, // Tag the record with the current mode
-                    createdAt: Timestamp.now() // Use Firestore Timestamp
-                };
-
-                if (currentEditingRecordId) {
-                    // This is an UPDATE
-                    saveRecordButton.textContent = "Saving Updates...";
-                    const docRef = doc(db, salaryRecordsCollection.path, currentEditingRecordId);
-                    await updateDoc(docRef, recordData); // Only save the data, not createdAt
-                    console.log("Salary record updated in Firestore with ID:", currentEditingRecordId);
-                    saveStatus.textContent = "Updates saved successfully!";
-                } else {
-                    // This is a NEW record
-                    saveRecordButton.textContent = "Saving Record...";
-                    const docRef = await addDoc(salaryRecordsCollection, newRecord);
-                    console.log("Salary record saved to Firestore with ID:", docRef.id);
-                    saveStatus.textContent = "Saved successfully!";
-                }
-                
-                setTimeout(() => saveStatus.textContent = "", 2000); // Clear message
-                
-                // After saving, reset the form
-                resetToCalculateMode();
-                clearForm();
-
-            } catch (error) {
-                console.error("Error saving salary record to Firestore:", error);
-                saveStatus.textContent = "Error saving record.";
-                setTimeout(() => saveStatus.textContent = "", 2000); // Clear message
-            } finally {
-                saveRecordButton.disabled = false;
-                // Text is reset in resetToCalculateMode()
-            }
-        }
-
-        /**
-         * Sets up a real-time listener for the employees collection.
-         */
-        function listenForEmployees() {
-            if (!employeesCollection) return;
-            onSnapshot(employeesCollection, (snapshot) => {
-                employees = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                console.log("Employees updated:", employees);
-                renderEmployeeSelect();
-                renderEmployeeManagementList();
-            }, (error) => {
-                console.error("Error listening for employees:", error);
-                employeeListContainer.innerHTML = '<p class="text-red-500 text-sm italic">Error loading employees.</p>';
-            });
-        }
-
-        /**
-         * Sets up a real-time listener for the salary records collection.
-         */
-        function listenForSalaryRecords() {
-            if (!salaryRecordsCollection) return;
-
-            const q = query(salaryRecordsCollection); 
-            // Note: We will sort in JS. Firestore sorting requires indexes.
-            
-            onSnapshot(q, (snapshot) => {
-                salaryRecords = snapshot.docs.map(doc => {
-                    const data = doc.data();
-                    let createdAtDate = null; // Default to null
-
-                    if (data.createdAt) {
-                        // Check if it's a Firestore Timestamp (new data)
-                        if (typeof data.createdAt.toDate === 'function') {
-                            createdAtDate = data.createdAt.toDate();
-                        } 
-                        // Check if it's a string (potentially old data)
-                        else if (typeof data.createdAt === 'string') {
-                            createdAtDate = new Date(data.createdAt);
-                            // If string is invalid, reset to null
-                            if (isNaN(createdAtDate.getTime())) {
-                                createdAtDate = null;
-                            }
-                        }
-                    }
-                    // If data.createdAt is missing, it remains null
-
-                    return {
-                        id: doc.id,
-                        ...data,
-                        // This is now either a valid Date object or null
-                        createdAt: createdAtDate 
-                    };
-                });
-
-                // Sort in JavaScript (newest first)
-                salaryRecords.sort((a, b) => b.createdAt - a.createdAt);
-
-                console.log("Salary records updated:", salaryRecords);
-                renderSalaryRecords(); // Re-render the list on the data page
-                
-                // Re-render analysis if on that page
-                if (!analysisPage.classList.contains('hidden')) {
-                    renderAnalysis();
-                }
-            }, (error) => {
-                console.error("Error listening for salary records:", error);
-                noRecordsText.textContent = "Error loading salary records.";
-                noRecordsText.classList.remove('hidden');
-            });
-        }
-
-
-        // --- Calendar Functions ---
-        function renderCalendar(month, year) {
-            calendarGrid.innerHTML = '';
-            const monthIndex = monthNames.indexOf(month);
-            if (monthIndex === -1 || !year) {
-                calendarGrid.innerHTML = '<p class="col-span-7 text-red-500">Please select a valid month and year first.</p>';
-                return;
-            }
-
-            calendarHeader.textContent = `${month}, ${year}`;
-            
-            const firstDayOfMonth = new Date(year, monthIndex, 1).getDay(); // 0 = Sunday, 1 = Monday, ...
-            const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-            const daysInPrevMonth = new Date(year, monthIndex, 0).getDate();
-            
-            const today = new Date();
-            const todayStr = today.toISOString().split('T')[0];
-
-            // 1. Add day headers (S, M, T, W, T, F, S) - Sunday first
-            ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(day => {
-                const dayEl = document.createElement('div');
-                dayEl.className = 'calendar-day header';
-                dayEl.textContent = day;
-                calendarGrid.appendChild(dayEl);
-            });
-
-            // 2. Add padding days from previous month
-            for (let i = 0; i < firstDayOfMonth; i++) {
-                const dayEl = document.createElement('div');
-                dayEl.className = 'calendar-day other-month';
-                dayEl.textContent = daysInPrevMonth - firstDayOfMonth + 1 + i;
-                calendarGrid.appendChild(dayEl);
-            }
-
-            // 3. Add days for current month
-            for (let i = 1; i <= daysInMonth; i++) {
-                const dayEl = document.createElement('div');
-                const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                
-                dayEl.className = 'calendar-day current-month';
-                dayEl.textContent = i;
-                dayEl.dataset.date = dateStr;
-
-                if (dateStr === todayStr) {
-                    dayEl.classList.add('today');
-                }
-                
-                if (tempSelectedDates.includes(dateStr)) {
-                    dayEl.classList.add('selected');
-                }
-
-                calendarGrid.appendChild(dayEl);
-            }
-
-            // 4. Add padding days for next month
-            const totalCells = firstDayOfMonth + daysInMonth;
-            const remainingCells = (totalCells % 7 === 0) ? 0 : 7 - (totalCells % 7); // More accurate padding
-            
-            for (let i = 1; i <= remainingCells; i++) {
-                const dayEl = document.createElement('div');
-                dayEl.className = 'calendar-day other-month';
-                dayEl.textContent = i;
-                calendarGrid.appendChild(dayEl);
-            }
-        }
-
-        function openCalendar(targetInput, title) {
-            currentCalendarInput = targetInput;
-            calendarHeader.textContent = title;
-
-            const selectedMonth = document.getElementById('month').value;
-            const selectedYear = document.getElementById('year').value;
-            
-            // Load existing dates from input data attribute if present
-            const existingDates = currentCalendarInput.dataset.dates;
-            tempSelectedDates = existingDates ? JSON.parse(existingDates) : [];
-            
-            renderCalendar(selectedMonth, selectedYear);
-            showModal(calendarModal);
-        }
-
-        /**
-         * Populates month and year dropdowns.
-         */
-        function initDateFields() {
-            // Set default month to *previous* month
-            const currentDate = new Date();
-            currentDate.setMonth(currentDate.getMonth() - 1); // Go back one month
-            
-            const defaultMonthIndex = currentDate.getMonth();
-            const defaultMonthName = monthNames[defaultMonthIndex];
-            const defaultYear = currentDate.getFullYear(); // This handles Jan -> Dec wrap-around
-            
-            document.getElementById('month').value = defaultMonthName;
-            
-            // Populate and set current year as default
-            const yearSelect = document.getElementById('year');
-            const filterYearSelect = document.getElementById('filterYear'); // Get filter select
-            const startYear = defaultYear - 50; 
-            const endYear = 2095;
-            
-            // Clear existing options (for filter select)
-            filterYearSelect.innerHTML = '<option value="">All Years</option>'; // Add default
-            yearSelect.innerHTML = ''; // Clear dashboard select
-            
-            for (let year = endYear; year >= startYear; year--) { // Loop from newest to oldest
-                const option = document.createElement('option');
-                option.value = year;
-                option.textContent = year;
-                
-                const filterOption = option.cloneNode(true); // Clone for filter
-                
-                yearSelect.appendChild(option);
-                filterYearSelect.appendChild(filterOption);
-            }
-            yearSelect.value = defaultYear; // Set default for dashboard
-            
-            // Set default for filters
-            document.getElementById('filterMonth').value = defaultMonthName;
-            filterYearSelect.value = defaultYear; 
-        }
-        
-        /**
-         * Generates a PDF payslip using jsPDF.
-         * Can be called with specific data (from saved records) or will use lastCalculationData.
-         */
-        function generatePdf(data) {
-            const record = data || lastCalculationData;
-            
-            if (!record) {
-                console.log("No data to generate PDF."); 
-                saveStatus.textContent = "No data to generate PDF. Please calculate first.";
-                setTimeout(() => saveStatus.textContent = "", 2000);
-                return;
-            }
-
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            // PDF-safe currency formatter (uses Rs. and Indian commas)
-            const formatPdfCurrency = (amount) => {
-                const fixedAmount = (amount || 0).toFixed(2);
-                const parts = fixedAmount.split('.');
-                let integerPart = parts[0];
-                const decimalPart = parts[1];
-                // Regex for Indian comma formatting (e.g., 1,00,000)
-                integerPart = integerPart.replace(/(\d)(?=(\d\d)+\d$)/g, "$1,");
-                return `Rs. ${integerPart}.${decimalPart}`;
-            };
-            
-            // Helper to format date arrays
-            const formatDateList = (dates) => {
-                if (!dates || dates.length === 0) return "";
-                const formattedDates = dates.map(d => d.split('-')[2]).join(', '); // Get just the day
-                return `(Dates: ${formattedDates})`;
-            };
-            
-            let yPos = 20;
-            let itemY = 0; // To align remarks
-
-            // Header
-            doc.setFontSize(20);
-            doc.setFont(undefined, 'bold');
-            doc.text("Pay Slip", 105, yPos, { align: 'center' });
-            yPos += 15;
-            
-            doc.setFontSize(16);
-            doc.setFont(undefined, 'normal');
-            doc.text("Guru naturals and agro industries", 15, yPos);
-            yPos += 7;
-            doc.setFontSize(10);
-            doc.text("21, shanti vihar colony near bengali square", 15, yPos);
-            yPos += 5;
-            doc.text("kanadia road indore", 15, yPos);
-            yPos += 10;
-
-            // Employee Info
-            doc.setFontSize(11);
-            doc.text(`Employee Name: ${record.employeeName}`, 15, yPos);
-            doc.text(`Pay Period: ${record.month}, ${record.year}`, 140, yPos);
-            yPos += 10;
-            doc.line(15, yPos, 195, yPos); // Divider
-            yPos += 10;
-
-            // Earnings
-            doc.setFontSize(14);
-            doc.setFont(undefined, 'bold');
-            doc.text("Earnings", 15, yPos);
-            doc.text("Amount (INR)", 195, yPos, { align: 'right' });
-            yPos += 8;
-            doc.setFont(undefined, 'normal');
-            doc.setFontSize(11);
-
-            doc.text("Base Salary:", 15, yPos);
-            doc.text(formatPdfCurrency(record.baseSalary), 195, yPos, { align: 'right' });
-            yPos += 7;
-            
-            itemY = yPos;
-            doc.text("Extra Day Addition:", 15, itemY);
-            doc.text(formatPdfCurrency(record.extraDayAddition), 195, itemY, { align: 'right' });
-            if (record.extraDayDates && record.extraDayDates.length > 0) {
-                yPos += 7;
-                doc.setFont(undefined, 'italic');
-                doc.setFontSize(9);
-                doc.text(formatDateList(record.extraDayDates), 15, yPos);
-                doc.setFont(undefined, 'normal');
-                doc.setFontSize(11);
-            }
-            yPos += 7;
-            
-            itemY = yPos;
-            doc.text("Overtime Pay:", 15, itemY);
-            doc.text(formatPdfCurrency(record.overtimePay), 195, itemY, { align: 'right' });
-            if (record.overtimeHours && record.overtimeHours > 0) {
-                yPos += 7;
-                doc.setFont(undefined, 'italic');
-                doc.setFontSize(9);
-                doc.text(`(${record.overtimeHours} hrs)`, 15, yPos);
-                doc.setFont(undefined, 'normal');
-                doc.setFontSize(11);
-            }
-            yPos += 7;
-            
-            itemY = yPos;
-            doc.text("Other Additions:", 15, itemY);
-            doc.text(formatPdfCurrency(record.otherAddition), 195, itemY, { align: 'right' });
-            if (record.otherAdditionRemark) {
-                yPos += 7;
-                doc.setFont(undefined, 'italic');
-                doc.setFontSize(9);
-                doc.text(`  (${record.otherAdditionRemark})`, 15, yPos);
-                doc.setFont(undefined, 'normal');
-                doc.setFontSize(11);
-            }
-            yPos += 7;
-            
-            doc.line(15, yPos, 195, yPos); // Divider
-            yPos += 7;
-            doc.setFont(undefined, 'bold');
-            doc.text("Total Earnings:", 15, yPos);
-            doc.text(formatPdfCurrency(record.totalEarnings), 195, yPos, { align: 'right' });
-            yPos += 15; // Extra space
-
-            // Deductions
-            doc.setFontSize(14);
-            doc.setFont(undefined, 'bold');
-            doc.text("Deductions", 15, yPos);
-            doc.text("Amount (INR)", 195, yPos, { align: 'right' });
-            yPos += 8;
-            doc.setFont(undefined, 'normal');
-            doc.setFontSize(11);
-
-            itemY = yPos;
-            doc.text("Absent Day Deduction:", 15, itemY);
-            doc.text(formatPdfCurrency(record.absentDeduction), 195, itemY, { align: 'right' });
-            if (record.absentDates && record.absentDates.length > 0) {
-                yPos += 7;
-                doc.setFont(undefined, 'italic');
-                doc.setFontSize(9);
-                doc.text(formatDateList(record.absentDates), 15, yPos);
-                doc.setFont(undefined, 'normal');
-                doc.setFontSize(11);
-            }
-            yPos += 7;
-
-            itemY = yPos;
-            doc.text("Half Day Deduction:", 15, itemY);
-            doc.text(formatPdfCurrency(record.halfDayDeduction), 195, itemY, { align: 'right' });
-            if (record.halfDayDates && record.halfDayDates.length > 0) {
-                yPos += 7;
-                doc.setFont(undefined, 'italic');
-                doc.setFontSize(9);
-                doc.text(formatDateList(record.halfDayDates), 15, yPos);
-                doc.setFont(undefined, 'normal');
-                doc.setFontSize(11);
-            }
-            yPos += 7;
-
-            itemY = yPos;
-            doc.text("Advance Payment:", 15, itemY);
-            doc.text(formatPdfCurrency(record.advancePayment), 195, itemY, { align: 'right' });
-            if (record.advancePaymentRemark) {
-                yPos += 7;
-                doc.setFont(undefined, 'italic');
-                doc.setFontSize(9);
-                doc.text(`  (${record.advancePaymentRemark})`, 15, yPos);
-                doc.setFont(undefined, 'normal');
-                doc.setFontSize(11);
-            }
-            yPos += 7;
-            
-            itemY = yPos;
-            doc.text("Other Deductions:", 15, itemY);
-            doc.text(formatPdfCurrency(record.otherDeduction), 195, itemY, { align: 'right' });
-            if (record.otherDeductionRemark) {
-                yPos += 7;
-                doc.setFont(undefined, 'italic');
-                doc.setFontSize(9);
-                doc.text(`  (${record.otherDeductionRemark})`, 15, yPos);
-                doc.setFont(undefined, 'normal');
-                doc.setFontSize(11);
-            }
-            yPos += 7;
-
-            doc.line(15, yPos, 195, yPos); // Divider
-            yPos += 7;
-            doc.setFont(undefined, 'bold');
-            doc.text("Total Deductions:", 15, yPos);
-            doc.text(formatPdfCurrency(record.totalDeductions), 195, yPos, { align: 'right' });
-            yPos += 15; // Extra space
-
-            // Net Pay
-            doc.setFontSize(16);
-            doc.setFont(undefined, 'bold');
-            doc.text("Net Pay:", 15, yPos);
-            doc.text(formatPdfCurrency(record.netPay), 195, yPos, { align: 'right' });
-            yPos += 10;
-
-            // Footer
-            yPos = doc.internal.pageSize.height - 20;
-            doc.setFontSize(10);
-            doc.setFont(undefined, 'italic');
-            doc.text("This is a computer-generated pay slip.", 105, yPos, { align: 'center' });
-
-
-            // Save
-            doc.save(`Payslip_${record.employeeName.replace(/ /g, '_')}_${record.month}_${record.year}.pdf`);
-        }
-        
-        /**
-         * Exports the currently filtered salary records to a CSV file.
-         */
-        function exportToCsv() {
-            // 1. Get filter values
-            const nameFilter = filterEmployeeName.value;
-            const monthFilter = filterMonth.value;
-            const yearFilter = filterYear.value;
-
-            // 2. Filter the global salaryRecords array
+            const nameFilter = filterEmployeeName.value, monthFilter = filterMonth.value, yearFilter = filterYear.value;
             const filteredRecords = salaryRecords.filter(record => {
                 const modeMatch = record.createdByMode === currentMode;
                 const nameMatch = !nameFilter || record.employeeName === nameFilter;
@@ -1785,635 +813,435 @@
                 const yearMatch = !yearFilter || record.year == yearFilter;
                 return modeMatch && nameMatch && monthMatch && yearMatch;
             });
-            
+            salaryRecordsContainer.innerHTML = '';
             if (filteredRecords.length === 0) {
-                noRecordsText.textContent = "No records to export.";
-                setTimeout(() => renderSalaryRecords(), 2000); // Re-render to clear
-                return;
+                noRecordsText.textContent = salaryRecords.length === 0 ? "No salary records found." : "No records match filters.";
+                noRecordsText.classList.remove('hidden'); return;
             }
-
-            // 3. Helper to escape CSV fields
-            const escapeCsv = (field) => {
-                if (field === null || field === undefined) return '""';
-                let str = String(field);
-                // If field contains a comma, quote, or newline, wrap it in double quotes
-                if (str.search(/("|,|\n)/g) >= 0) {
-                    str = '"' + str.replace(/"/g, '""') + '"';
-                }
-                return str;
-            };
-
-            // 4. Define CSV Headers
-            const headers = [
-                'Employee Name', 'Month', 'Year', 'Created At', 'Created By Mode',
-                'Base Salary', 'Absent Days', 'Half Days', 'Extra Days',
-                'Overtime Hours', 'Overtime Pay', 'Other Addition', 'Other Addition Remark',
-                'Total Earnings', 'Absent Deduction', 'Half Day Deduction',
-                'Advance Payment', 'Advance Payment Remark', 'Other Deduction', 'Other Deduction Remark',
-                'Total Deductions', 'Net Pay', 'Absent Dates', 'Half Day Dates', 'Extra Day Dates'
-            ];
+            noRecordsText.classList.add('hidden');
             
-            // 5. Create CSV Content
-            let csvContent = headers.join(',') + '\n';
-            
-            filteredRecords.forEach(r => {
-                const row = [
-                    r.employeeName, r.month, r.year, r.createdAt.toISOString(), r.createdByMode,
-                    r.baseSalary, r.absentDays, r.halfDays, r.extraDays,
-                    r.overtimeHours, r.overtimePay, r.otherAddition, r.otherAdditionRemark,
-                    r.totalEarnings, r.absentDeduction, r.halfDayDeduction,
-                    r.advancePayment, r.advancePaymentRemark, r.otherDeduction, r.otherDeductionRemark,
-                    r.totalDeductions, r.netPay,
-                    JSON.stringify(r.absentDates || []), // Store arrays as JSON strings
-                    JSON.stringify(r.halfDayDates || []),
-                    JSON.stringify(r.extraDayDates || [])
-                ].map(escapeCsv).join(',');
-                csvContent += row + '\n';
+            filteredRecords.forEach(record => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-lg shadow-sm border flex flex-col sm:flex-row justify-between items-start";
+                const recordDate = record.createdAt ? record.createdAt.toLocaleString('en-IN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A';
+                card.innerHTML = `
+                    <div class="mb-4 sm:mb-0">
+                        <h3 class="text-lg font-semibold text-gray-800">${record.employeeName}</h3>
+                        <p class="text-xs text-blue-600 font-medium">${record.designation || 'N/A'}</p>
+                        <p class="text-sm text-gray-600">For ${record.month}, ${record.year}</p>
+                        <p class="text-xs text-gray-400">Saved on: ${recordDate}</p>
+                    </div>
+                    <div class="flex flex-col items-start sm:items-end w-full sm:w-auto">
+                        <span class="text-xl font-bold text-blue-700">${formatInCurrency(record.netPay)}</span>
+                        <div class="flex gap-2 mt-2">
+                            <button class="edit-record-btn bg-blue-100 text-blue-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-blue-200" data-id="${record.id}">Edit</button>
+                            <button class="delete-record-btn bg-red-100 text-red-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-red-200" data-id="${record.id}" data-name="${record.employeeName}">Delete</button>
+                            <button class="download-record-pdf-btn bg-gray-100 text-gray-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-gray-200" data-id="${record.id}">PDF</button>
+                            <button class="whatsapp-record-btn bg-green-100 text-green-700 text-sm font-medium py-1 px-3 rounded-full hover:bg-green-200 flex items-center gap-1" data-id="${record.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16"><path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.06 3.973l-1.127 4.113 4.209-1.103a7.882 7.882 0 0 0 3.792.98h.004c4.367 0 7.926-3.558 7.93-7.93a7.856 7.856 0 0 0-2.33-5.64zM7.994 14.125a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg>
+                                WA
+                            </button>
+                        </div>
+                    </div>`;
+                salaryRecordsContainer.appendChild(card);
+            });
+        }
+
+        function renderAnalysis() {
+            const nameF = analysisFilterEmployeeName.value;
+            const monthF = analysisFilterMonth.value;
+            const yearF = analysisFilterYear.value;
+
+            const filteredAll = salaryRecords.filter(r => {
+                const nameM = !nameF || r.employeeName === nameF;
+                const monthM = !monthF || r.month === monthF;
+                const yearM = !yearF || r.year == yearF;
+                return nameM && monthM && yearM;
             });
 
-            // 6. Create and Trigger Download
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            
-            // Create dynamic filename
-            let filename = `salary_export_${currentMode}`;
-            if (yearFilter) filename += `_${yearFilter}`;
-            if (monthFilter) filename += `_${monthFilter}`;
-            if (nameFilter) filename += `_${nameFilter.replace(/ /g, '_')}`;
-            filename += '.csv';
-            
-            link.setAttribute('download', filename);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-        
-        /**
-         * Clears all fields on the main salary form.
-         */
-        function clearForm() {
-            // employeeSelect.value = ""; // Keep employee selected
-            document.getElementById('baseSalary').value = "";
-            
-            absentDaysInput.value = "0";
-            absentDaysInput.dataset.dates = "[]";
-            halfDaysInput.value = "0";
-            halfDaysInput.dataset.dates = "[]";
-            extraDaysInput.value = "0";
-            extraDaysInput.dataset.dates = "[]";
-            
-            document.getElementById('overtimeHours').value = "";
-            document.getElementById('otherAddition').value = "";
-            document.getElementById('otherAdditionRemark').value = "";
-            
-            document.getElementById('advancePayment').value = "";
-            document.getElementById('advancePaymentRemark').value = "";
-            document.getElementById('otherDeduction').value = "";
-            document.getElementById('otherDeductionRemark').value = "";
-            
-            // Clear summary
-            document.getElementById('summarySection').classList.add('hidden');
-            lastCalculationData = null;
-        }
-        
-        /**
-         * Puts the form into 'Edit' mode, populating it with record data.
-         */
-        function loadRecordForEdit(recordId) {
-            const record = salaryRecords.find(r => r.id === recordId);
-            if (!record) {
-                console.error("Could not find record to edit:", recordId);
+            const filteredMode = filteredAll.filter(r => r.createdByMode === currentMode);
+
+            if (filteredAll.length === 0) {
+                analysisContent.classList.add('hidden');
+                noAnalysisDataText.classList.remove('hidden');
+                noAnalysisDataText.textContent = "No data found for selected filters.";
                 return;
             }
 
-            // Set global editing ID
-            currentEditingRecordId = recordId;
+            analysisContent.classList.remove('hidden');
+            noAnalysisDataText.classList.add('hidden');
 
-            // Fill form fields
-            employeeSelect.value = record.employeeName;
-            document.getElementById('month').value = record.month;
-            document.getElementById('year').value = record.year;
+            const totalDistributed = filteredAll.reduce((acc, r) => acc + (r.netPay || 0), 0);
+            const totalPayslips = filteredAll.length;
+            const averagePay = totalPayslips > 0 ? (totalDistributed / totalPayslips) : 0;
+            const highestPayslip = filteredAll.reduce((max, r) => (r.netPay > max.netPay) ? r : max, { netPay: -Infinity });
+
+            const totalSalaryGivenVal = filteredAll.reduce((acc, r) => acc + (r.netPay || 0) + (r.advancePayment || 0), 0);
+            const totalAdvanceGivenVal = filteredAll.reduce((acc, r) => acc + (r.advancePayment || 0), 0);
+            const totalDeductionsVal = filteredAll.reduce((acc, r) => acc + (r.totalDeductions || 0), 0);
+
+            const employeeTotals = filteredMode.reduce((acc, r) => {
+                acc[r.employeeName] = (acc[r.employeeName] || 0) + (r.netPay || 0); return acc;
+            }, {});
+            const sortedEmployeeTotals = Object.entries(employeeTotals).map(([name, total]) => ({ name, total })).sort((a, b) => b.total - a.total);
+
+            const employeeAttendance = filteredMode.reduce((acc, r) => {
+                acc[r.employeeName] = (acc[r.employeeName] || 0) + (r.absentDays || 0) + ((r.halfDays || 0) * 0.5); return acc;
+            }, {});
+            const sortedAttendance = Object.entries(employeeAttendance).map(([name, totalLeaveDays]) => ({ name, totalLeaveDays })).sort((a, b) => b.totalLeaveDays - a.totalLeaveDays);
+
+            let mostLeave = sortedAttendance[0], mostActive = sortedAttendance[sortedAttendance.length - 1];
+
+            const monthlyTotals = filteredMode.reduce((acc, r) => {
+                const mIdx = monthNames.indexOf(r.month);
+                const key = `${r.year}-${String(mIdx).padStart(2, '0')}`;
+                if (!acc[key]) acc[key] = { total: 0, label: `${r.month.substring(0, 3)} ${r.year}` };
+                acc[key].total += (r.netPay || 0); return acc;
+            }, {});
+            const sortedMonthlyTotals = Object.entries(monthlyTotals).map(([key, data]) => ({ key, ...data })).sort((a, b) => a.key.localeCompare(b.key));
+
+            analysisTotalSalaryGiven.textContent = formatInCurrency(totalSalaryGivenVal);
+            analysisTotalAdvanceGiven.textContent = formatInCurrency(totalAdvanceGivenVal);
+            analysisTotalDeductionsCard.textContent = formatInCurrency(totalDeductionsVal);
             
-            document.getElementById('baseSalary').value = record.baseSalary || "";
-            
-            absentDaysInput.value = record.absentDays || "0";
-            absentDaysInput.dataset.dates = JSON.stringify(record.absentDates || []);
-            halfDaysInput.value = record.halfDays || "0";
-            halfDaysInput.dataset.dates = JSON.stringify(record.halfDayDates || []);
-            extraDaysInput.value = record.extraDays || "0";
-            extraDaysInput.dataset.dates = JSON.stringify(record.extraDayDates || []);
-            
-            document.getElementById('overtimeHours').value = record.overtimeHours || "";
-            document.getElementById('otherAddition').value = record.otherAddition || "";
-            document.getElementById('otherAdditionRemark').value = record.otherAdditionRemark || "";
-            
-            document.getElementById('advancePayment').value = record.advancePayment || "";
-            document.getElementById('advancePaymentRemark').value = record.advancePaymentRemark || "";
-            document.getElementById('otherDeduction').value = record.otherDeduction || "";
-            document.getElementById('otherDeductionRemark').value = record.otherDeductionRemark || "";
-            
-            // Switch UI to edit mode
-            calculateButton.textContent = "Calculate Updates";
-            saveRecordButton.textContent = "Save Updates";
-            cancelEditButton.classList.remove('hidden');
-            document.getElementById('summarySection').classList.add('hidden'); // Hide summary until recalculated
-            
-            // Switch to dashboard tab
-            dashboardTab.click();
-            window.scrollTo(0, 0); // Scroll to top
+            analysisTotalDistributed.textContent = formatInCurrency(totalDistributed);
+            analysisTotalPayslips.textContent = totalPayslips;
+            analysisAveragePay.textContent = formatInCurrency(averagePay);
+            if (highestPayslip.netPay > -Infinity) {
+                analysisHighestPayslipAmount.textContent = formatInCurrency(highestPayslip.netPay);
+                analysisHighestPayslipEmployee.textContent = `To ${highestPayslip.employeeName} for ${highestPayslip.month}, ${highestPayslip.year}`;
+            }
+            analysisMostLeave.textContent = mostLeave ? `${mostLeave.totalLeaveDays} days` : "0 days";
+            analysisMostLeaveEmployee.textContent = mostLeave ? mostLeave.name : "N/A";
+            analysisMostActive.textContent = mostActive ? `${mostActive.totalLeaveDays} days` : "0 days";
+            analysisMostActiveEmployee.textContent = mostActive ? mostActive.name : "N/A";
+
+            analysisEmployeeTotalsList.innerHTML = '';
+            sortedEmployeeTotals.forEach(emp => {
+                const li = document.createElement('li'); li.className = "flex justify-between items-center p-3 bg-gray-50 rounded-lg border";
+                li.innerHTML = `<span class="font-medium text-gray-700">${emp.name}</span><span class="font-bold text-gray-900">${formatInCurrency(emp.total)}</span>`;
+                analysisEmployeeTotalsList.appendChild(li);
+            });
+
+            const ctx = document.getElementById('myChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'bar', data: { labels: sortedMonthlyTotals.map(m => m.label), datasets: [{ data: sortedMonthlyTotals.map(m => m.total), backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1, borderRadius: 5 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: v => '₹' + v.toLocaleString('en-IN') } } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed.y.toLocaleString('en-IN', { style: 'currency', currency: 'INR' }) } } } }
+            });
         }
-        
-        /**
-         * Resets the form from 'Edit' mode back to 'Calculate' mode.
-         */
-        function resetToCalculateMode() {
-            currentEditingRecordId = null;
-            calculateButton.textContent = "Calculate Pay";
-            saveRecordButton.textContent = "Save Record";
-            cancelEditButton.classList.add('hidden');
-            document.getElementById('summarySection').classList.add('hidden');
-            lastCalculationData = null;
-            clearForm(); // Also clear the fields
+
+        function renderEmployeeSelect() {
+            const currentS = employeeSelect.value, currentF = filterEmployeeName.value, currentAF = analysisFilterEmployeeName.value;
+            employeeSelect.innerHTML = '<option value="">Select Employee</option>';
+            filterEmployeeName.innerHTML = '<option value="">All Employees</option>';
+            analysisFilterEmployeeName.innerHTML = '<option value="">All Employees</option>';
+            const sortedE = [...employees].sort((a, b) => a.name.localeCompare(b.name));
+            sortedE.forEach(emp => {
+                const o = new Option(emp.name, emp.name); 
+                o.dataset.salary = emp.baseSalary || "";
+                o.dataset.designation = emp.designation || "N/A"; // Backward comp fallback
+                if (emp.name === currentS) o.selected = true; 
+                employeeSelect.add(o);
+                filterEmployeeName.add(new Option(emp.name, emp.name, false, emp.name === currentF));
+                analysisFilterEmployeeName.add(new Option(emp.name, emp.name, false, emp.name === currentAF));
+            });
         }
 
+        function renderEmployeeManagementList() {
+            employeeListContainer.innerHTML = employees.length ? '' : '<p class="text-gray-500 text-sm italic">No employees added.</p>';
+            [...employees].sort((a, b) => a.name.localeCompare(b.name)).forEach(emp => {
+                const div = document.createElement('div'); div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg border';
+                div.innerHTML = `<div><span class="text-gray-800 font-medium">${emp.name}</span><span class="text-xs text-blue-600 ml-2 italic">${emp.designation || 'N/A'}</span><span class="text-gray-500 text-sm ml-2">${emp.baseSalary ? `(₹${emp.baseSalary.toLocaleString('en-IN')})` : ''}</span></div><div class="flex gap-2"><button class="edit-employee-btn text-blue-600 hover:text-blue-800 font-medium" data-id="${emp.id}" data-name="${emp.name}" data-salary="${emp.baseSalary || ''}" data-designation="${emp.designation || 'N/A'}">Edit</button><button class="delete-employee-btn text-red-500 hover:text-red-700 font-medium" data-id="${emp.id}" data-name="${emp.name}">Delete</button></div>`;
+                employeeListContainer.appendChild(div);
+            });
+        }
 
-        // --- Firebase Initialization and Auth ---
+        function resetEmployeeForm() { currentEmployeeEditingId = null; employeeFormTitle.textContent = "Add New Employee"; newEmployeeNameInput.value = ""; newEmployeeSalaryInput.value = ""; newEmployeeDesignationInput.value = ""; addEmployeeBtn.classList.remove('hidden'); updateEmployeeBtn.classList.add('hidden'); cancelEmployeeUpdateBtn.classList.add('hidden'); employeeError.classList.add('hidden'); }
+
+        async function addEmployee() {
+            const name = newEmployeeNameInput.value.trim(), baseSalary = parseFloat(newEmployeeSalaryInput.value) || 0, designation = newEmployeeDesignationInput.value.trim() || "Staff";
+            if (!name) { employeeError.textContent = 'Enter a name.'; employeeError.classList.remove('hidden'); return; }
+            if (employees.some(e => e.name.toLowerCase() === name.toLowerCase())) { employeeError.textContent = 'Exists.'; employeeError.classList.remove('hidden'); return; }
+            try { addEmployeeBtn.disabled = true; await addDoc(employeesCollection, { name, baseSalary, designation, createdAt: Timestamp.now() }); resetEmployeeForm(); clearForm(); } catch (e) { console.error(e); } finally { addEmployeeBtn.disabled = false; }
+        }
+
+        async function updateEmployee() {
+            const name = newEmployeeNameInput.value.trim(), baseSalary = parseFloat(newEmployeeSalaryInput.value) || 0, designation = newEmployeeDesignationInput.value.trim() || "Staff";
+            if (!name || !currentEmployeeEditingId) return;
+            try { updateEmployeeBtn.disabled = true; await updateDoc(doc(db, employeesCollection.path, currentEmployeeEditingId), { name, baseSalary, designation }); resetEmployeeForm(); } catch (e) { console.error(e); } finally { updateEmployeeBtn.disabled = false; }
+        }
+
+        async function confirmDeleteEmployee() {
+            if (!employeeToDelete) return;
+            try { await deleteDoc(doc(db, employeesCollection.path, employeeToDelete.id)); } catch (e) { console.error(e); } finally { hideModal(confirmDeleteModal); employeeToDelete = null; }
+        }
+
+        async function confirmDeleteRecord() {
+            if (!recordToDeleteId) return;
+            try { await deleteDoc(doc(db, salaryRecordsCollection.path, recordToDeleteId)); } catch (e) { console.error(e); } finally { hideModal(confirmRecordDeleteModal); recordToDeleteId = null; }
+        }
+
+        async function saveSalaryRecord(data) {
+            try {
+                saveRecordButton.disabled = true;
+                if (currentEditingRecordId) {
+                    await updateDoc(doc(db, salaryRecordsCollection.path, currentEditingRecordId), data);
+                    saveStatus.textContent = "Updated!";
+                } else {
+                    await addDoc(salaryRecordsCollection, { ...data, createdByMode: currentMode, createdAt: Timestamp.now() });
+                    saveStatus.textContent = "Saved!";
+                }
+                setTimeout(() => saveStatus.textContent = "", 2000);
+                resetToCalculateMode(); clearForm();
+            } catch (e) { console.error(e); saveStatus.textContent = "Error."; } finally { saveRecordButton.disabled = false; }
+        }
+
+        function listenForEmployees() { onSnapshot(employeesCollection, (s) => { employees = s.docs.map(d => ({ id: d.id, ...d.data(), designation: d.data().designation || "N/A" })); renderEmployeeSelect(); renderEmployeeManagementList(); }); }
+        function listenForSalaryRecords() {
+            onSnapshot(query(salaryRecordsCollection), (s) => {
+                salaryRecords = s.docs.map(d => {
+                    const data = d.data(); let c = null;
+                    if (data.createdAt) {
+                        if (typeof data.createdAt.toDate === 'function') c = data.createdAt.toDate();
+                        else if (typeof data.createdAt === 'string') { c = new Date(data.createdAt); if (isNaN(c.getTime())) c = null; }
+                    }
+                    return { id: d.id, ...data, createdAt: c, designation: data.designation || "N/A" };
+                }).sort((a, b) => b.createdAt - a.createdAt);
+                renderSalaryRecords(); if (!analysisPage.classList.contains('hidden')) renderAnalysis();
+            });
+        }
+
+        function renderCalendar(month, year) {
+            calendarGrid.innerHTML = ''; const mIdx = monthNames.indexOf(month);
+            if (mIdx === -1 || !year) return;
+            calendarHeader.textContent = `${month}, ${year}`;
+            const first = new Date(year, mIdx, 1).getDay(), days = new Date(year, mIdx + 1, 0).getDate(), prevDays = new Date(year, mIdx, 0).getDate();
+            ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(d => { const el = document.createElement('div'); el.className = 'calendar-day header'; el.textContent = d; calendarGrid.appendChild(el); });
+            for (let i = 0; i < first; i++) { const el = document.createElement('div'); el.className = 'calendar-day other-month'; el.textContent = prevDays - first + 1 + i; calendarGrid.appendChild(el); }
+            for (let i = 1; i <= days; i++) {
+                const el = document.createElement('div'), dStr = `${year}-${String(mIdx + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                el.className = `calendar-day current-month ${tempSelectedDates.includes(dStr) ? 'selected' : ''}`; el.textContent = i; el.dataset.date = dStr; calendarGrid.appendChild(el);
+            }
+        }
+
+        function openCalendar(target, title) {
+            currentCalendarInput = target; calendarHeader.textContent = title;
+            const m = document.getElementById('month').value, y = document.getElementById('year').value;
+            tempSelectedDates = target.dataset.dates ? JSON.parse(target.dataset.dates) : [];
+            renderCalendar(m, y); showModal(calendarModal);
+        }
+
+        function initDateFields() {
+            const d = new Date(); d.setMonth(d.getMonth() - 1);
+            const mIdx = d.getMonth(), mName = monthNames[mIdx], y = d.getFullYear();
+            document.getElementById('month').value = mName;
+            const ySel = document.getElementById('year'), fYSel = document.getElementById('filterYear'), aFYSel = document.getElementById('analysisFilterYear');
+            ySel.innerHTML = ''; fYSel.innerHTML = '<option value="">All Years</option>'; aFYSel.innerHTML = '<option value="">All Years</option>';
+            for (let i = 2095; i >= 1970; i--) {
+                const o = new Option(i, i); ySel.add(o); fYSel.add(new Option(i, i)); aFYSel.add(new Option(i, i));
+            }
+            ySel.value = y; document.getElementById('filterMonth').value = mName; fYSel.value = y;
+            document.getElementById('analysisFilterMonth').value = mName; aFYSel.value = y;
+        }
+
+        function generatePdf(data) {
+            const r = data || lastCalculationData; if (!r) return;
+            const { jsPDF } = window.jspdf; 
+            const doc = new jsPDF();
+            const fDt = (d) => d && d.length ? `(Dates: ${d.map(x => x.split('-')[2]).join(', ')})` : "";
+            let y = 4;
+            const logo = document.getElementById('dashboardCompanyLogo');
+            if (logo && logo.complete) {
+                try { doc.addImage(logo, 'PNG', 97.5, y, 22, 18); } catch (err) { console.error("PDF Logo load failed:", err); }
+            }
+            y = 30;
+            doc.setTextColor(255, 0, 0); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+            doc.text("GURU NATURALS AND AGRO INDUSTRIES", 15, y);
+            y += 7; doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+            doc.text("21, shanti vihar colony near bengali square kanadia road, indore, madhya pradesh, 452016", 15, y);
+            y += 5; doc.text("GST No: 23ABAFG7574N1Z0", 15, y);
+            y += 10; doc.setTextColor(0, 0, 0); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+            doc.text("PAY SLIP", 105, y, { align: 'center' });
+            y += 15; doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold'); doc.text("Employee Name:", 15, y); doc.setFont('helvetica', 'normal'); doc.text(r.employeeName || 'N/A', 50, y);
+            doc.setFont('helvetica', 'bold'); doc.text("Pay Period:", 140, y); doc.setFont('helvetica', 'normal'); doc.text(`${r.month}, ${r.year}`, 165, y);
+            y += 7; doc.setFont('helvetica', 'bold'); doc.text("Designation:", 15, y); doc.setFont('helvetica', 'normal'); doc.text(r.designation || 'Staff', 50, y);
+            y += 10; doc.line(15, y, 195, y); 
+            y += 10; doc.setFontSize(14); doc.setFont('helvetica', 'bold'); doc.text("Earnings", 15, y); doc.text("Amount (INR)", 195, y, { align: 'right' }); 
+            y += 8; doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+            doc.text("Base Salary:", 15, y); doc.text(formatInCurrency(r.baseSalary), 195, y, { align: 'right' }); y += 7;
+            doc.text("Extra Day Addition:", 15, y); doc.text(formatInCurrency(r.extraDayAddition), 195, y, { align: 'right' }); if (r.extraDayDates?.length) { y += 5; doc.setFontSize(9); doc.text(fDt(r.extraDayDates), 15, y); doc.setFontSize(11); } y += 7;
+            doc.text("Overtime Pay:", 15, y); doc.text(formatInCurrency(r.overtimePay), 195, y, { align: 'right' }); if (r.overtimeHours) { y += 5; doc.setFontSize(9); doc.text(`(${r.overtimeHours} hrs)`, 15, y); doc.setFontSize(11); } y += 7;
+            doc.text("Other Additions:", 15, y); doc.text(formatInCurrency(r.otherAddition), 195, y, { align: 'right' }); if (r.otherAdditionRemark) { y += 5; doc.setFontSize(9); doc.text(`(${r.otherAdditionRemark})`, 15, y); doc.setFontSize(11); } y += 7;
+            doc.line(15, y, 195, y); y += 7; doc.setFont('helvetica', 'bold'); doc.text("Total Earnings:", 15, y); doc.text(formatInCurrency(r.totalEarnings), 195, y, { align: 'right' }); 
+            y += 15; doc.text("Deductions", 15, y); doc.text("Amount (INR)", 195, y, { align: 'right' }); y += 8; doc.setFont('helvetica', 'normal');
+            doc.text("Absent Deduction:", 15, y); doc.text(formatInCurrency(r.absentDeduction), 195, y, { align: 'right' }); if (r.absentDates?.length) { y += 5; doc.setFontSize(9); doc.text(fDt(r.absentDates), 15, y); doc.setFontSize(11); } y += 7;
+            doc.text("Half Day Deduction:", 15, y); doc.text(formatInCurrency(r.halfDayDeduction), 195, y, { align: 'right' }); if (r.halfDayDates?.length) { y += 5; doc.setFontSize(9); doc.text(fDt(r.halfDayDates), 15, y); doc.setFontSize(11); } y += 7;
+            doc.text("Advance Payment:", 15, y); doc.text(formatInCurrency(r.advancePayment), 195, y, { align: 'right' }); if (r.advancePaymentRemark) { y += 5; doc.setFontSize(9); doc.text(`(${r.advancePaymentRemark})`, 15, y); doc.setFontSize(11); } y += 7;
+            doc.text("Other Deductions:", 15, y); doc.text(formatInCurrency(r.otherDeduction), 195, y, { align: 'right' }); if (r.otherDeductionRemark) { y += 5; doc.setFontSize(9); doc.text(`(${r.otherDeductionRemark})`, 15, y); doc.setFontSize(11); } y += 7;
+            doc.line(15, y, 195, y); y += 7; doc.setFont('helvetica', 'bold'); doc.text("Total Deductions:", 15, y); doc.text(formatInCurrency(r.totalDeductions), 195, y, { align: 'right' }); 
+            y += 15; doc.setFontSize(16); doc.text("Net Pay:", 15, y); doc.text(formatInCurrency(r.netPay), 195, y, { align: 'right' });
+            doc.setTextColor(100, 100, 100); doc.setFontSize(9); doc.setFont('helvetica', 'italic');
+            doc.text("This is a computer generated payslip and does not require signature and stamp.", 105, 285, { align: 'center' });
+            doc.save(`Payslip_${r.employeeName}_${r.month}_${r.year}.pdf`);
+        }
+
+        function exportToCsv() {
+            const nF = filterEmployeeName.value, mF = filterMonth.value, yF = filterYear.value;
+            const fR = salaryRecords.filter(r => r.createdByMode === currentMode && (!nF || r.employeeName === nF) && (!mF || r.month === mF) && (!yF || r.year == yF));
+            if (!fR.length) return;
+            const h = ['Employee', 'Designation', 'Month', 'Year', 'Net Pay', 'Total Earnings', 'Total Deductions', 'Advance Paid'];
+            let c = h.join(',') + '\n';
+            fR.forEach(r => c += [r.employeeName, (r.designation || 'Staff'), r.month, r.year, r.netPay, r.totalEarnings, r.totalDeductions, r.advancePayment].join(',') + '\n');
+            const blob = new Blob([c], { type: 'text/csv' }), url = URL.createObjectURL(blob), a = document.createElement('a');
+            a.href = url; a.download = `salary_export.csv`; a.click();
+        }
+
+        function clearForm() {
+            document.getElementById('baseSalary').value = ""; absentDaysInput.value = "0"; absentDaysInput.dataset.dates = "[]";
+            halfDaysInput.value = "0"; halfDaysInput.dataset.dates = "[]"; extraDaysInput.value = "0"; extraDaysInput.dataset.dates = "[]";
+            document.getElementById('overtimeHours').value = ""; document.getElementById('otherAddition').value = ""; document.getElementById('otherAdditionRemark').value = "";
+            document.getElementById('advancePayment').value = ""; document.getElementById('advancePaymentRemark').value = ""; document.getElementById('otherDeduction').value = ""; document.getElementById('otherDeductionRemark').value = "";
+            document.getElementById('summarySection').classList.add('hidden'); lastCalculationData = null;
+        }
+
+        function loadRecordForEdit(id) {
+            const r = salaryRecords.find(x => x.id === id); if (!r) return;
+            currentEditingRecordId = id; employeeSelect.value = r.employeeName; document.getElementById('month').value = r.month; document.getElementById('year').value = r.year; document.getElementById('baseSalary').value = r.baseSalary || "";
+            absentDaysInput.value = r.absentDays || "0"; absentDaysInput.dataset.dates = JSON.stringify(r.absentDates || []);
+            halfDaysInput.value = r.halfDays || "0"; halfDaysInput.dataset.dates = JSON.stringify(r.halfDayDates || []);
+            extraDaysInput.value = r.extraDays || "0"; extraDaysInput.dataset.dates = JSON.stringify(r.extraDayDates || []);
+            document.getElementById('overtimeHours').value = r.overtimeHours || ""; document.getElementById('otherAddition').value = r.otherAddition || ""; document.getElementById('otherAdditionRemark').value = r.otherAdditionRemark || "";
+            document.getElementById('advancePayment').value = r.advancePayment || ""; document.getElementById('advancePaymentRemark').value = r.advancePaymentRemark || ""; document.getElementById('otherDeduction').value = r.otherDeduction || ""; document.getElementById('otherDeductionRemark').value = r.otherDeductionRemark || "";
+            calculateButton.textContent = "Calculate Updates"; saveRecordButton.textContent = "Save Updates"; cancelEditButton.classList.remove('hidden'); document.getElementById('summarySection').classList.add('hidden');
+            dashboardTab.click(); window.scrollTo(0, 0);
+        }
+
+        function resetToCalculateMode() { currentEditingRecordId = null; calculateButton.textContent = "Calculate Pay"; saveRecordButton.textContent = "Save Record"; cancelEditButton.classList.add('hidden'); document.getElementById('summarySection').classList.add('hidden'); clearForm(); }
+
         async function initializeFirebase() {
             try {
-                if (!firebaseConfig || Object.keys(firebaseConfig).length === 0) {
-                    console.warn("Firebase config is missing. App cannot connect to database.");
-                    return;
-                }
-
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                setLogLevel('Debug');
-
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        console.log("User is authenticated:", user.uid);
-                        userId = user.uid;
-
-                        // --- Define Firestore Collections ---
-                        // Use public data path
-                        employeesCollection = collection(db, `artifacts/${appId}/public/data/employees`);
-                        salaryRecordsCollection = collection(db, `artifacts/${appId}/public/data/salaryRecords`);
-
-                        // --- Start Data Listeners ---
-                        listenForEmployees();
-                        listenForSalaryRecords();
-                    } else {
-                        console.log("User is not authenticated.");
-                        userId = null;
+                const app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app);
+                onAuthStateChanged(auth, (u) => {
+                    if (u) {
+                        userId = u.uid; employeesCollection = collection(db, `artifacts/${appId}/public/data/employees`); salaryRecordsCollection = collection(db, `artifacts/${appId}/public/data/salaryRecords`);
+                        listenForEmployees(); listenForSalaryRecords();
                     }
                 });
+                if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken); else await signInAnonymously(auth);
+            } catch (e) { console.error(e); }
+        }
 
-                // Sign in
-                if (initialAuthToken) {
-                    console.log("Signing in with custom token...");
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    console.log("Signing in anonymously...");
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Firebase initialization error:", error);
-                noRecordsText.textContent = "Error connecting to database.";
-                noRecordsText.classList.remove('hidden');
-            }
+        function setMode(m) {
+            currentMode = m; const isO = m === 'owner';
+            modeSwitchBtn.textContent = isO ? 'Switch to Accountant Mode' : 'Switch to Owner Mode';
+            modeSwitchBtn.dataset.mode = m;
+            modeSwitchBtn.classList.toggle('bg-red-600', isO); modeSwitchBtn.classList.toggle('bg-indigo-600', !isO);
+            manageEmployeesBtn.classList.toggle('hidden', !isO);
+            renderSalaryRecords(); if (!analysisPage.classList.contains('hidden')) renderAnalysis();
         }
-        
-        // --- Mode Switching Logic ---
-        function setMode(mode) {
-            currentMode = mode;
-            if (mode === 'owner') {
-                modeSwitchBtn.textContent = 'Switch to Accountant Mode';
-                modeSwitchBtn.dataset.mode = 'owner';
-                modeSwitchBtn.classList.replace('bg-indigo-600', 'bg-red-600');
-                modeSwitchBtn.classList.replace('hover:bg-indigo-700', 'hover:bg-red-700');
-            } else {
-                modeSwitchBtn.textContent = 'Switch to Owner Mode';
-                modeSwitchBtn.dataset.mode = 'accountant';
-                modeSwitchBtn.classList.replace('bg-red-600', 'bg-indigo-600');
-                modeSwitchBtn.classList.replace('hover:bg-red-700', 'hover:bg-indigo-700');
-            }
-            console.log("Mode switched to:", currentMode);
-            
-            // Re-render data and analysis for the new mode
-            renderSalaryRecords();
-            if (!analysisPage.classList.contains('hidden')) {
-                renderAnalysis();
-            }
-        }
-        
-        
-        // --- Initial Setup ---
+
         document.addEventListener('DOMContentLoaded', () => {
-            // initDateFields(); // <-- MOVED
-            // initializeFirebase(); // <-- MOVED
-            
-            // --- Dashboard Lock Listener (NEW) ---
             unlockDashboardBtn.addEventListener('click', () => {
                 if (lockPinInput.value === '9131') {
-                    // Correct PIN
-                    lockError.textContent = "";
-                    dashboardLockModal.classList.add('opacity-0', 'pointer-events-none');
-                    mainAppContainer.classList.remove('hidden');
-                    
-                    // NOW initialize the app
-                    initDateFields();
-                    initializeFirebase(); // Start Firebase connection
-
-                } else {
-                    // Incorrect PIN
-                    lockError.textContent = "Incorrect PIN. Please try again.";
-                    lockPinInput.value = "";
-                }
-            });
-            
-            // --- Tab Navigation Listeners ---
-            dashboardTab.addEventListener('click', () => {
-                dashboardPage.classList.remove('hidden');
-                salaryDataPage.classList.add('hidden');
-                analysisPage.classList.add('hidden'); // Hide analysis
-                dashboardTab.classList.add('active');
-                salaryDataTab.classList.remove('active');
-                analysisTab.classList.remove('active'); // Deactivate analysis
+                    dashboardLockModal.classList.add('opacity-0', 'pointer-events-none'); mainAppContainer.classList.remove('hidden');
+                    initDateFields(); initializeFirebase();
+                } else { lockError.textContent = "Wrong PIN."; lockPinInput.value = ""; }
             });
 
-            salaryDataTab.addEventListener('click', () => {
-                dashboardPage.classList.add('hidden');
-                salaryDataPage.classList.remove('hidden');
-                analysisPage.classList.add('hidden'); // Hide analysis
-                dashboardTab.classList.remove('active');
-                salaryDataTab.classList.add('active');
-                analysisTab.classList.remove('active'); // Deactivate analysis
-                renderSalaryRecords();
-            });
+            dashboardTab.addEventListener('click', () => { dashboardPage.classList.remove('hidden'); salaryDataPage.classList.add('hidden'); analysisPage.classList.add('hidden'); dashboardTab.classList.add('active'); salaryDataTab.classList.remove('active'); analysisTab.classList.remove('active'); });
+            salaryDataTab.addEventListener('click', () => { dashboardPage.classList.add('hidden'); salaryDataPage.classList.remove('hidden'); analysisPage.classList.add('hidden'); dashboardTab.classList.remove('active'); salaryDataTab.classList.add('active'); analysisTab.classList.remove('active'); renderSalaryRecords(); });
+            analysisTab.addEventListener('click', () => { dashboardPage.classList.add('hidden'); salaryDataPage.classList.add('hidden'); analysisPage.classList.remove('hidden'); dashboardTab.classList.remove('active'); salaryDataTab.classList.remove('active'); analysisTab.classList.add('active'); renderAnalysis(); });
 
-            analysisTab.addEventListener('click', () => {
-                dashboardPage.classList.add('hidden');
-                salaryDataPage.classList.add('hidden');
-                analysisPage.classList.remove('hidden'); // Show analysis
-                dashboardTab.classList.remove('active');
-                salaryDataTab.classList.remove('active');
-                analysisTab.classList.add('active'); // Activate analysis
-                renderAnalysis();
-            });
-
-            // --- Employee Modal Listeners ---
-            manageEmployeesBtn.addEventListener('click', () => {
-                resetEmployeeForm(); // Ensure form is in 'Add' mode
-                showModal(employeeModal);
-            });
+            manageEmployeesBtn.addEventListener('click', () => { resetEmployeeForm(); showModal(employeeModal); });
             closeEmployeeModal.addEventListener('click', () => hideModal(employeeModal));
             addEmployeeBtn.addEventListener('click', addEmployee);
             updateEmployeeBtn.addEventListener('click', updateEmployee);
             cancelEmployeeUpdateBtn.addEventListener('click', resetEmployeeForm);
-            
-            // Employee Edit/Delete listeners (using delegation)
             employeeListContainer.addEventListener('click', (e) => {
-                const deleteBtn = e.target.closest('.delete-employee-btn');
-                if (deleteBtn) {
-                    employeeToDelete = {
-                        id: deleteBtn.dataset.id,
-                        name: deleteBtn.dataset.name
-                    };
-                    employeeToDeleteName.textContent = employeeToDelete.name;
-                    showModal(confirmDeleteModal);
-                }
-                
-                const editBtn = e.target.closest('.edit-employee-btn');
-                if (editBtn) {
-                    currentEmployeeEditingId = editBtn.dataset.id;
-                    employeeFormTitle.textContent = "Update Employee";
-                    newEmployeeNameInput.value = editBtn.dataset.name;
-                    newEmployeeSalaryInput.value = editBtn.dataset.salary;
-                    addEmployeeBtn.classList.add('hidden');
-                    updateEmployeeBtn.classList.remove('hidden');
-                    cancelEmployeeUpdateBtn.classList.remove('hidden');
-                    employeeError.classList.add('hidden');
-                }
+                const d = e.target.closest('.delete-employee-btn'), ed = e.target.closest('.edit-employee-btn');
+                if (d) { employeeToDelete = { id: d.dataset.id, name: d.dataset.name }; employeeToDeleteName.textContent = d.dataset.name; showModal(confirmDeleteModal); }
+                if (ed) { currentEmployeeEditingId = ed.dataset.id; employeeFormTitle.textContent = "Update"; newEmployeeNameInput.value = ed.dataset.name; newEmployeeSalaryInput.value = ed.dataset.salary; newEmployeeDesignationInput.value = ed.dataset.designation || ""; addEmployeeBtn.classList.add('hidden'); updateEmployeeBtn.classList.remove('hidden'); cancelEmployeeUpdateBtn.classList.remove('hidden'); }
             });
             cancelDeleteBtn.addEventListener('click', () => hideModal(confirmDeleteModal));
             confirmDeleteBtn.addEventListener('click', confirmDeleteEmployee);
-            
-            // --- Salary Record Edit/Delete Listeners (Delegation) ---
+
             salaryRecordsContainer.addEventListener('click', (e) => {
-                const deleteBtn = e.target.closest('.delete-record-btn');
-                if (deleteBtn) {
-                    recordToDeleteId = deleteBtn.dataset.id;
-                    recordToDeleteName.textContent = deleteBtn.dataset.name;
-                    showModal(confirmRecordDeleteModal);
-                }
-                
-                const editBtn = e.target.closest('.edit-record-btn');
-                if (editBtn) {
-                    loadRecordForEdit(editBtn.dataset.id);
-                }
-                
-                const pdfBtn = e.target.closest('.download-record-pdf-btn');
-                if (pdfBtn) {
-                    const recordId = pdfBtn.dataset.id;
-                    const recordToDownload = salaryRecords.find(r => r.id === recordId);
-                    if (recordToDownload) {
-                        generatePdf(recordToDownload);
-                    } else {
-                        console.error("Could not find record to download:", recordId);
-                    }
-                }
+                const d = e.target.closest('.delete-record-btn'), ed = e.target.closest('.edit-record-btn'), p = e.target.closest('.download-record-pdf-btn'), w = e.target.closest('.whatsapp-record-btn');
+                if (d) { recordToDeleteId = d.dataset.id; recordToDeleteName.textContent = d.dataset.name; showModal(confirmRecordDeleteModal); }
+                if (ed) loadRecordForEdit(ed.dataset.id);
+                if (p) { const r = salaryRecords.find(x => x.id === p.dataset.id); if (r) generatePdf(r); }
+                if (w) { const r = salaryRecords.find(x => x.id === w.dataset.id); if (r) sendWhatsAppNotification(r); }
             });
             cancelRecordDeleteBtn.addEventListener('click', () => hideModal(confirmRecordDeleteModal));
             confirmRecordDeleteBtn.addEventListener('click', confirmDeleteRecord);
-            
-            // --- PDF/CSV Download Listeners ---
-            downloadPdfButton.addEventListener('click', () => generatePdf()); // Calls with no args
+            downloadPdfButton.addEventListener('click', () => generatePdf());
             exportCsvButton.addEventListener('click', exportToCsv);
+            summaryWhatsAppBtn.addEventListener('click', () => sendWhatsAppNotification());
+            getAiInsightsBtn.addEventListener('click', fetchAIInsights);
 
-            // --- Filter Listeners ---
             filterEmployeeName.addEventListener('change', renderSalaryRecords);
             filterMonth.addEventListener('change', renderSalaryRecords);
             filterYear.addEventListener('change', renderSalaryRecords);
+            
+            analysisFilterEmployeeName.addEventListener('change', renderAnalysis);
+            analysisFilterMonth.addEventListener('change', renderAnalysis);
+            analysisFilterYear.addEventListener('change', renderAnalysis);
 
-            // --- Calendar Listeners ---
             calendarGrid.addEventListener('click', (e) => {
-                const dayEl = e.target.closest('.calendar-day');
-                if (dayEl && dayEl.classList.contains('current-month')) {
-                    const date = dayEl.dataset.date;
-                    dayEl.classList.toggle('selected');
-                    
-                    if (tempSelectedDates.includes(date)) {
-                        tempSelectedDates = tempSelectedDates.filter(d => d !== date);
-                    } else {
-                        tempSelectedDates.push(date);
-                    }
-                    tempSelectedDates.sort(); // Keep them in order
-                }
+                const el = e.target.closest('.calendar-day.current-month'); if (!el) return;
+                const d = el.dataset.date; el.classList.toggle('selected');
+                if (tempSelectedDates.includes(d)) tempSelectedDates = tempSelectedDates.filter(x => x !== d); else tempSelectedDates.push(d);
+                tempSelectedDates.sort();
             });
-
-            openAbsentCalendarBtn.addEventListener('click', () => openCalendar(absentDaysInput, 'Select Absent Dates'));
-            openHalfDayCalendarBtn.addEventListener('click', () => openCalendar(halfDaysInput, 'Select Half Days'));
-            openExtraDayCalendarBtn.addEventListener('click', () => openCalendar(extraDaysInput, 'Select Extra Days'));
+            openAbsentCalendarBtn.addEventListener('click', () => openCalendar(absentDaysInput, 'Absent'));
+            openHalfDayCalendarBtn.addEventListener('click', () => openCalendar(halfDaysInput, 'Half Days'));
+            openExtraDayCalendarBtn.addEventListener('click', () => openCalendar(extraDaysInput, 'Extra Days'));
             closeCalendarModalBtn.addEventListener('click', () => hideModal(calendarModal));
             cancelCalendarBtn.addEventListener('click', () => hideModal(calendarModal));
+            saveCalendarBtn.addEventListener('click', () => { if (currentCalendarInput) { currentCalendarInput.value = tempSelectedDates.length; currentCalendarInput.dataset.dates = JSON.stringify(tempSelectedDates); } hideModal(calendarModal); });
 
-            saveCalendarBtn.addEventListener('click', () => {
-                if (currentCalendarInput) {
-                    currentCalendarInput.value = tempSelectedDates.length;
-                    currentCalendarInput.dataset.dates = JSON.stringify(tempSelectedDates);
-                }
-                hideModal(calendarModal);
-                currentCalendarInput = null;
-                tempSelectedDates = [];
-            });
-            
-            // --- Employee Dropdown Listener ---
             employeeSelect.addEventListener('change', (e) => {
-                // Do not auto-fill if we are in edit mode
-                if (currentEditingRecordId) {
-                    return;
-                }
-                
-                // Clear all fields first
-                clearForm();
-                
-                // Then, set the new base salary
-                const selectedOption = e.target.options[e.target.selectedIndex];
-                const salary = selectedOption.dataset.salary;
-                if (salary) {
-                    document.getElementById('baseSalary').value = salary;
-                }
+                if (currentEditingRecordId) return; clearForm();
+                const selected = e.target.options[e.target.selectedIndex];
+                const s = selected.dataset.salary; 
+                if (s) document.getElementById('baseSalary').value = s;
             });
-            
-            // --- Mode Switch Listeners ---
-            modeSwitchBtn.addEventListener('click', () => {
-                if (modeSwitchBtn.dataset.mode === 'accountant') {
-                    // Trying to switch to Owner mode, show password modal
-                    passwordError.classList.add('hidden');
-                    passwordInput.value = "";
-                    showModal(passwordModal);
-                } else {
-                    // Switching from Owner to Accountant mode, no password needed
-                    setMode('accountant');
-                }
-            });
-            
+
+            modeSwitchBtn.addEventListener('click', () => { if (modeSwitchBtn.dataset.mode === 'accountant') { passwordError.classList.add('hidden'); passwordInput.value = ""; showModal(passwordModal); } else setMode('accountant'); });
             cancelPasswordBtn.addEventListener('click', () => hideModal(passwordModal));
-            submitPasswordBtn.addEventListener('click', () => {
-                const pass = passwordInput.value;
-                if (pass === '9111000') { // This check is correct
-                    setMode('owner');
-                    hideModal(passwordModal);
-                } else {
-                    passwordError.textContent = "Incorrect password.";
-                    passwordError.classList.remove('hidden');
-                }
-            });
-            
-            // --- Calculation Logic ---
-            calculateButton.addEventListener('click', function() {
-                
-                // --- Get Input Values ---
-                const employeeName = document.getElementById('employeeName').value;
-                const month = document.getElementById('month').value;
-                const year = document.getElementById('year').value;
+            submitPasswordBtn.addEventListener('click', () => { if (passwordInput.value === '9111000') { setMode('owner'); hideModal(passwordModal); } else { passwordError.textContent = "Wrong."; passwordError.classList.remove('hidden'); } });
 
-                if (!employeeName) {
-                    saveStatus.textContent = "Please select an employee.";
-                    setTimeout(() => saveStatus.textContent = "", 2000);
-                    return;
-                }
-                
-                // Parse all numerical inputs, defaulting to 0 if empty
-                const baseSalary = parseFloat(document.getElementById('baseSalary').value) || 0;
-                
-                const absentDays = parseFloat(absentDaysInput.value) || 0;
-                const absentDates = JSON.parse(absentDaysInput.dataset.dates || '[]');
-                const halfDays = parseFloat(halfDaysInput.value) || 0;
-                const halfDayDates = JSON.parse(halfDaysInput.dataset.dates || '[]');
-                const extraDays = parseFloat(extraDaysInput.value) || 0;
-                const extraDayDates = JSON.parse(extraDaysInput.dataset.dates || '[]');
-                
-                const overtimeHours = parseFloat(document.getElementById('overtimeHours').value) || 0;
-                const otherAddition = parseFloat(document.getElementById('otherAddition').value) || 0;
-                const otherAdditionRemark = document.getElementById('otherAdditionRemark').value;
-                
-                const advancePayment = parseFloat(document.getElementById('advancePayment').value) || 0;
-                const advancePaymentRemark = document.getElementById('advancePaymentRemark').value;
-                const otherDeduction = parseFloat(document.getElementById('otherDeduction').value) || 0;
-                const otherDeductionRemark = document.getElementById('otherDeductionRemark').value;
+            calculateButton.addEventListener('click', () => {
+                const sel = employeeSelect.options[employeeSelect.selectedIndex];
+                const eN = sel.value, m = document.getElementById('month').value, y = document.getElementById('year').value;
+                const eD = sel.dataset.designation || 'N/A'; // Backward fallback
 
-                // --- Perform Calculations ---
+                if (!eN) { saveStatus.textContent = "Select employee."; return; }
+                const bS = parseFloat(document.getElementById('baseSalary').value) || 0, absD = parseFloat(absentDaysInput.value) || 0, hD = parseFloat(halfDaysInput.value) || 0, exD = parseFloat(extraDaysInput.value) || 0;
+                const otH = parseFloat(document.getElementById('overtimeHours').value) || 0, otA = parseFloat(document.getElementById('otherAddition').value) || 0, otR = document.getElementById('otherAdditionRemark').value;
+                const adP = parseFloat(document.getElementById('advancePayment').value) || 0, adR = document.getElementById('advancePaymentRemark').value, odP = parseFloat(document.getElementById('otherDeduction').value) || 0, odR = document.getElementById('otherDeductionRemark').value;
+                const pDS = bS / 30, pHS = pDS / 9, absDed = pDS * absD, hDDed = (pDS / 2) * hD, exAdd = pDS * exD, otP = pHS * otH;
+                const tE = bS + exAdd + otP + otA, tD = absDed + hDDed + adP + odP, nP = tE - tD;
+                const fmt = (v) => v.toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
                 
-                // Calculate per-day salary. Assuming 30 days in a month.
-                const perDaySalary = baseSalary > 0 ? (baseSalary / 30) : 0;
-                // Calculate per-hour salary. Assuming 9-hour work day.
-                const perHourSalary = perDaySalary > 0 ? (perDaySalary / 9) : 0;
-
-                const absentDeduction = perDaySalary * absentDays;
-                const halfDayDeduction = (perDaySalary / 2) * halfDays;
-                const extraDayAddition = perDaySalary * extraDays;
-                const overtimePay = perHourSalary * overtimeHours;
-
-                const totalEarnings = baseSalary + extraDayAddition + overtimePay + otherAddition;
-                const totalDeductions = absentDeduction + halfDayDeduction + advancePayment + otherDeduction;
+                lastCalculationData = { employeeName: eN, designation: eD, month: m, year: y, baseSalary: bS, extraDays: exD, extraDayAddition: exAdd, overtimeHours: otH, overtimePay: otP, otherAddition: otA, totalEarnings: tE, absentDays: absD, absentDeduction: absDed, halfDays: hD, halfDayDeduction: hDDed, advancePayment: adP, otherDeduction: odP, totalDeductions: tD, netPay: nP, absentDates: JSON.parse(absentDaysInput.dataset.dates || '[]'), halfDayDates: JSON.parse(halfDaysInput.dataset.dates || '[]'), extraDayDates: JSON.parse(extraDaysInput.dataset.dates || '[]'), otherAdditionRemark: otR, advancePaymentRemark: adR, otherDeductionRemark: odR };
                 
-                const netPay = totalEarnings - totalDeductions;
-
-                // --- Helper to Format Currency ---
-                const formatCurrency = (amount) => {
-                    return amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
-                };
-
-                // --- Store data for PDF generation ---
-                lastCalculationData = {
-                    employeeName, month, year,
-                    
-                    baseSalary, // Store raw number
-                    extraDays, // Store count
-                    extraDayAddition, // Store raw number
-                    overtimeHours, // Store OT hours
-                    overtimePay, // Store raw number
-                    otherAddition, // Store raw number
-                    totalEarnings, // Store raw number
-                    
-                    absentDays, // Store count
-                    absentDeduction, // Store raw number
-                    halfDays, // Store count
-                    halfDayDeduction, // Store raw number
-                    advancePayment, // Store raw number
-                    otherDeduction, // Store raw number
-                    totalDeductions, // Store raw number
-                    
-                    netPay, // Store raw number
-                    
-                    // Store the date arrays as well
-                    absentDates,
-                    halfDayDates,
-                    extraDayDates,
-                    
-                    otherAdditionRemark,
-                    advancePaymentRemark,
-                    otherDeductionRemark
-                };
-                
-                // --- Populate Summary Section ---
-                document.getElementById('summaryEmployee').textContent = employeeName || "N/A";
-                document.getElementById('summaryMonth').textContent = `For ${month}, ${year}`;
+                document.getElementById('summaryEmployee').textContent = eN; 
+                document.getElementById('summaryDesignation').textContent = eD;
+                document.getElementById('summaryMonth').textContent = `${m} ${y}`; 
                 document.getElementById('summaryDate').textContent = new Date().toLocaleDateString('en-IN');
-
-                // Earnings
-                document.getElementById('summaryBase').textContent = formatCurrency(baseSalary);
-                document.getElementById('summaryExtraDay').textContent = `+ ${formatCurrency(extraDayAddition)}`;
-                
-                const summaryExtraDayDatesEl = document.getElementById('summaryExtraDayDates');
-                if (extraDayDates.length > 0) {
-                    const formattedDates = extraDayDates.map(d => d.split('-')[2]).join(', ');
-                    summaryExtraDayDatesEl.textContent = `Dates: ${formattedDates}`;
-                    summaryExtraDayDatesEl.classList.remove('hidden');
-                } else {
-                    summaryExtraDayDatesEl.classList.add('hidden');
-                    summaryExtraDayDatesEl.textContent = '';
-                }
-                
-                document.getElementById('summaryOvertime').textContent = `+ ${formatCurrency(overtimePay)}`;
-                const summaryOvertimeHoursEl = document.getElementById('summaryOvertimeHours');
-                if (overtimeHours > 0) {
-                    summaryOvertimeHoursEl.textContent = `(${overtimeHours} hrs)`;
-                    summaryOvertimeHoursEl.classList.remove('hidden');
-                } else {
-                    summaryOvertimeHoursEl.classList.add('hidden');
-                    summaryOvertimeHoursEl.textContent = '';
-                }
-                
-                document.getElementById('summaryOtherAddition').textContent = `+ ${formatCurrency(otherAddition)}`;
-                
-                const summaryOtherAdditionRemark = document.getElementById('summaryOtherAdditionRemark');
-                if (otherAdditionRemark) {
-                    summaryOtherAdditionRemark.textContent = `"${otherAdditionRemark}"`;
-                    summaryOtherAdditionRemark.classList.remove('hidden');
-                } else {
-                    summaryOtherAdditionRemark.classList.add('hidden');
-                    summaryOtherAdditionRemark.textContent = ''; // Clear content
-                }
-
-                // Populate the Total Earnings field
-                document.getElementById('summaryTotalEarnings').textContent = formatCurrency(totalEarnings);
-
-                // Deductions
-                document.getElementById('summaryAbsent').textContent = `- ${formatCurrency(absentDeduction)}`;
-                const summaryAbsentDatesEl = document.getElementById('summaryAbsentDates');
-                if (absentDates.length > 0) {
-                    const formattedDates = absentDates.map(d => d.split('-')[2]).join(', '); // Get just the day (e.g., '11, 16, 18')
-                    summaryAbsentDatesEl.textContent = `Dates: ${formattedDates}`;
-                    summaryAbsentDatesEl.classList.remove('hidden');
-                } else {
-                    summaryAbsentDatesEl.classList.add('hidden');
-                    summaryAbsentDatesEl.textContent = ''; // Clear content
-                }
-                
-                document.getElementById('summaryHalfDay').textContent = `- ${formatCurrency(halfDayDeduction)}`;
-                
-                const summaryHalfDayDatesEl = document.getElementById('summaryHalfDayDates');
-                if (halfDayDates.length > 0) {
-                    const formattedDates = halfDayDates.map(d => d.split('-')[2]).join(', ');
-                    summaryHalfDayDatesEl.textContent = `Dates: ${formattedDates}`;
-                    summaryHalfDayDatesEl.classList.remove('hidden');
-                } else {
-                    summaryHalfDayDatesEl.classList.add('hidden');
-                    summaryHalfDayDatesEl.textContent = '';
-                }
-                
-                document.getElementById('summaryAdvance').textContent = `- ${formatCurrency(advancePayment)}`;
-                const summaryAdvanceRemark = document.getElementById('summaryAdvanceRemark');
-                if (advancePaymentRemark) {
-                    summaryAdvanceRemark.textContent = `"${advancePaymentRemark}"`;
-                    summaryAdvanceRemark.classList.remove('hidden');
-                } else {
-                    summaryAdvanceRemark.classList.add('hidden');
-                    summaryAdvanceRemark.textContent = '';
-                }
-                
-                document.getElementById('summaryOtherDeduction').textContent = `- ${formatCurrency(otherDeduction)}`;
-                document.getElementById('summaryTotalDeductions').textContent = formatCurrency(totalDeductions);
-                
-                const summaryOtherDeductionRemark = document.getElementById('summaryOtherDeductionRemark');
-                 if (otherDeductionRemark) {
-                     summaryOtherDeductionRemark.textContent = `"${otherDeductionRemark}"`;
-                     summaryOtherDeductionRemark.classList.remove('hidden');
-                } else {
-                     summaryOtherDeductionRemark.classList.add('hidden');
-                     summaryOtherDeductionRemark.textContent = ''; // Clear content
-                }
-
-                // Net Pay
-                document.getElementById('summaryNetPay').textContent = formatCurrency(netPay);
-
-                // --- Show the Summary ---
-                document.getElementById('summarySection').classList.remove('hidden');
-
-                // Scroll to the summary
-                document.getElementById('summarySection').scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('summaryBase').textContent = fmt(bS); document.getElementById('summaryExtraDay').textContent = `+ ${fmt(exAdd)}`;
+                document.getElementById('summaryOvertime').textContent = `+ ${fmt(otP)}`; document.getElementById('summaryOtherAddition').textContent = `+ ${fmt(otA)}`;
+                document.getElementById('summaryTotalEarnings').textContent = fmt(tE); document.getElementById('summaryAbsent').textContent = `- ${fmt(absDed)}`;
+                document.getElementById('summaryHalfDay').textContent = `- ${fmt(hDDed)}`; document.getElementById('summaryAdvance').textContent = `- ${fmt(adP)}`;
+                document.getElementById('summaryOtherDeduction').textContent = `- ${fmt(odP)}`; document.getElementById('summaryTotalDeductions').textContent = fmt(tD);
+                document.getElementById('summaryNetPay').textContent = fmt(nP); document.getElementById('summarySection').classList.remove('hidden'); document.getElementById('summarySection').scrollIntoView({ behavior: 'smooth' });
             });
-            
-            // --- Save Record Listener ---
-            saveRecordButton.addEventListener('click', () => {
-                if (lastCalculationData) {
-                    saveSalaryRecord(lastCalculationData);
-                } else {
-                    saveStatus.textContent = "Please calculate pay first.";
-                    setTimeout(() => saveStatus.textContent = "", 2000);
-                }
-            });
-            
-            // --- Cancel Edit Listener ---
+            saveRecordButton.addEventListener('click', () => { if (lastCalculationData) saveSalaryRecord(lastCalculationData); });
             cancelEditButton.addEventListener('click', resetToCalculateMode);
         });
     </script>
-
 </body>
 </html>
