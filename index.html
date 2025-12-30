@@ -506,21 +506,21 @@
                             <h3 class="text-sm font-medium text-green-600 uppercase tracking-wide">Total Payslips Issued</h3>
                             <p class="text-4xl font-bold text-green-800 mt-2" id="analysisTotalPayslips">0</p>
                         </div>
-                        <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-200 shadow-md">
+                        <div id="analysisAvgPayCard" class="bg-indigo-50 p-6 rounded-xl border border-indigo-200 shadow-md">
                             <h3 class="text-sm font-medium text-indigo-600 uppercase tracking-wide">Average Net Pay</h3>
                             <p class="text-4xl font-bold text-indigo-800 mt-2" id="analysisAveragePay">₹0.00</p>
                         </div>
-                        <div class="bg-yellow-50 p-6 rounded-xl border border-yellow-200 shadow-md">
+                        <div id="analysisHighestPayCard" class="bg-yellow-50 p-6 rounded-xl border border-yellow-200 shadow-md">
                             <h3 class="text-sm font-medium text-yellow-600 uppercase tracking-wide">Highest Single Payslip</h3>
                             <p class="text-4xl font-bold text-yellow-800 mt-2" id="analysisHighestPayslipAmount">₹0.00</p>
                             <p class="text-sm text-gray-600 mt-1" id="analysisHighestPayslipEmployee">N/A</p>
                         </div>
-                        <div class="bg-red-50 p-6 rounded-xl border border-red-200 shadow-md">
-                            <h3 class="text-sm font-medium text-red-600 uppercase tracking-wide">Most Leave Taken (Mode)</h3>
+                        <div id="analysisMostLeaveCard" class="bg-red-50 p-6 rounded-xl border border-red-200 shadow-md">
+                            <h3 class="text-sm font-medium text-red-600 uppercase tracking-wide">Most Leave Taken</h3>
                             <p class="text-4xl font-bold text-red-800 mt-2" id="analysisMostLeave">0 days</p>
                             <p class="text-sm text-gray-600 mt-1" id="analysisMostLeaveEmployee">N/A</p>
                         </div>
-                        <div class="bg-green-50 p-6 rounded-xl border border-green-200 shadow-md">
+                        <div id="analysisMostActiveCard" class="bg-green-50 p-6 rounded-xl border border-green-200 shadow-md">
                             <h3 class="text-sm font-medium text-green-600 uppercase tracking-wide">Most Active Worker</h3>
                             <p class="text-4xl font-bold text-green-800 mt-2" id="analysisMostActive">0 days</p>
                             <p class="text-sm text-gray-600 mt-1" id="analysisMostActiveEmployee">N/A</p>
@@ -546,7 +546,7 @@
                     </div>
     
                     <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-md">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Total Pay by Employee (Current Mode)</h3>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Total Pay by Employee</h3>
                         <ul class="space-y-3 max-h-60 overflow-y-auto" id="analysisEmployeeTotalsList">
                         </ul>
                     </div>
@@ -672,6 +672,7 @@
         const dashboardTab = document.getElementById('dashboardTab'), salaryDataTab = document.getElementById('salaryDataTab'), dashboardPage = document.getElementById('dashboardPage'), salaryDataPage = document.getElementById('salaryDataPage'), salaryRecordsContainer = document.getElementById('salaryRecordsContainer'), noRecordsText = document.getElementById('noRecordsText'), exportCsvButton = document.getElementById('exportCsvButton');
         const analysisTab = document.getElementById('analysisTab'), analysisPage = document.getElementById('analysisPage'), analysisContent = document.getElementById('analysisContent'), noAnalysisDataText = document.getElementById('noAnalysisDataText'), analysisTotalDistributed = document.getElementById('analysisTotalDistributed'), analysisTotalPayslips = document.getElementById('analysisTotalPayslips'), analysisAveragePay = document.getElementById('analysisAveragePay'), analysisHighestPayslipAmount = document.getElementById('analysisHighestPayslipAmount'), analysisHighestPayslipEmployee = document.getElementById('analysisHighestPayslipEmployee'), analysisEmployeeTotalsList = document.getElementById('analysisEmployeeTotalsList'), analysisChartTitle = document.getElementById('analysisChartTitle'), analysisMostLeave = document.getElementById('analysisMostLeave'), analysisMostLeaveEmployee = document.getElementById('analysisMostLeaveEmployee'), analysisMostActive = document.getElementById('analysisMostActive'), analysisMostActiveEmployee = document.getElementById('analysisMostActiveEmployee');
         const analysisTotalSalaryGiven = document.getElementById('analysisTotalSalaryGiven'), analysisTotalAdvanceGiven = document.getElementById('analysisTotalAdvanceGiven'), analysisTotalDeductionsCard = document.getElementById('analysisTotalDeductionsCard');
+        const analysisAvgPayCard = document.getElementById('analysisAvgPayCard'), analysisHighestPayCard = document.getElementById('analysisHighestPayCard'), analysisMostLeaveCard = document.getElementById('analysisMostLeaveCard'), analysisMostActiveCard = document.getElementById('analysisMostActiveCard');
         const filterEmployeeName = document.getElementById('filterEmployeeName'), filterMonth = document.getElementById('filterMonth'), filterYear = document.getElementById('filterYear');
         const analysisFilterEmployeeName = document.getElementById('analysisFilterEmployeeName');
         const analysisFilterMonth = document.getElementById('analysisFilterMonth');
@@ -852,47 +853,56 @@
             const monthF = analysisFilterMonth.value;
             const yearF = analysisFilterYear.value;
 
-            const filteredAll = salaryRecords.filter(r => {
-                const nameM = !nameF || r.employeeName === nameF;
-                const monthM = !monthF || r.month === monthF;
-                const yearM = !yearF || r.year == yearF;
-                return nameM && monthM && yearM;
+            // STRATEGY: Data Isolation. 
+            // Only fetch records for the current mode to ensure Accountant can't see Owner data in analysis.
+            const filteredRecords = salaryRecords.filter(r => {
+                const modeMatch = r.createdByMode === currentMode;
+                const nameMatch = !nameF || r.employeeName === nameF;
+                const monthMatch = !monthF || r.month === monthF;
+                const yearMatch = !yearF || r.year == yearF;
+                return modeMatch && nameMatch && monthMatch && yearMatch;
             });
 
-            const filteredMode = filteredAll.filter(r => r.createdByMode === currentMode);
-
-            if (filteredAll.length === 0) {
+            if (filteredRecords.length === 0) {
                 analysisContent.classList.add('hidden');
                 noAnalysisDataText.classList.remove('hidden');
-                noAnalysisDataText.textContent = "No data found for selected filters.";
+                noAnalysisDataText.textContent = "No data found for selected filters in this mode.";
                 return;
             }
 
             analysisContent.classList.remove('hidden');
             noAnalysisDataText.classList.add('hidden');
 
-            const totalDistributed = filteredAll.reduce((acc, r) => acc + (r.netPay || 0), 0);
-            const totalPayslips = filteredAll.length;
+            // --- Toggle comparison cards based on filter ---
+            const isIndividualEmployee = !!nameF;
+            [analysisAvgPayCard, analysisHighestPayCard, analysisMostLeaveCard, analysisMostActiveCard].forEach(card => {
+                if (isIndividualEmployee) card.classList.add('hidden');
+                else card.classList.remove('hidden');
+            });
+
+            // Calculate stats based on filteredRecords (which already respects currentMode)
+            const totalDistributed = filteredRecords.reduce((acc, r) => acc + (r.netPay || 0), 0);
+            const totalPayslips = filteredRecords.length;
             const averagePay = totalPayslips > 0 ? (totalDistributed / totalPayslips) : 0;
-            const highestPayslip = filteredAll.reduce((max, r) => (r.netPay > max.netPay) ? r : max, { netPay: -Infinity });
+            const highestPayslip = filteredRecords.reduce((max, r) => (r.netPay > max.netPay) ? r : max, { netPay: -Infinity });
 
-            const totalSalaryGivenVal = filteredAll.reduce((acc, r) => acc + (r.netPay || 0) + (r.advancePayment || 0), 0);
-            const totalAdvanceGivenVal = filteredAll.reduce((acc, r) => acc + (r.advancePayment || 0), 0);
-            const totalDeductionsVal = filteredAll.reduce((acc, r) => acc + (r.totalDeductions || 0), 0);
+            const totalSalaryGivenVal = filteredRecords.reduce((acc, r) => acc + (r.netPay || 0) + (r.advancePayment || 0), 0);
+            const totalAdvanceGivenVal = filteredRecords.reduce((acc, r) => acc + (r.advancePayment || 0), 0);
+            const totalDeductionsVal = filteredRecords.reduce((acc, r) => acc + (r.totalDeductions || 0), 0);
 
-            const employeeTotals = filteredMode.reduce((acc, r) => {
+            const employeeTotals = filteredRecords.reduce((acc, r) => {
                 acc[r.employeeName] = (acc[r.employeeName] || 0) + (r.netPay || 0); return acc;
             }, {});
             const sortedEmployeeTotals = Object.entries(employeeTotals).map(([name, total]) => ({ name, total })).sort((a, b) => b.total - a.total);
 
-            const employeeAttendance = filteredMode.reduce((acc, r) => {
+            const employeeAttendance = filteredRecords.reduce((acc, r) => {
                 acc[r.employeeName] = (acc[r.employeeName] || 0) + (r.absentDays || 0) + ((r.halfDays || 0) * 0.5); return acc;
             }, {});
             const sortedAttendance = Object.entries(employeeAttendance).map(([name, totalLeaveDays]) => ({ name, totalLeaveDays })).sort((a, b) => b.totalLeaveDays - a.totalLeaveDays);
 
             let mostLeave = sortedAttendance[0], mostActive = sortedAttendance[sortedAttendance.length - 1];
 
-            const monthlyTotals = filteredMode.reduce((acc, r) => {
+            const monthlyTotals = filteredRecords.reduce((acc, r) => {
                 const mIdx = monthNames.indexOf(r.month);
                 const key = `${r.year}-${String(mIdx).padStart(2, '0')}`;
                 if (!acc[key]) acc[key] = { total: 0, label: `${r.month.substring(0, 3)} ${r.year}` };
@@ -940,7 +950,7 @@
             sortedE.forEach(emp => {
                 const o = new Option(emp.name, emp.name); 
                 o.dataset.salary = emp.baseSalary || "";
-                o.dataset.designation = emp.designation || "N/A"; // Backward comp fallback
+                o.dataset.designation = emp.designation || "N/A";
                 if (emp.name === currentS) o.selected = true; 
                 employeeSelect.add(o);
                 filterEmployeeName.add(new Option(emp.name, emp.name, false, emp.name === currentF));
@@ -1216,7 +1226,7 @@
             calculateButton.addEventListener('click', () => {
                 const sel = employeeSelect.options[employeeSelect.selectedIndex];
                 const eN = sel.value, m = document.getElementById('month').value, y = document.getElementById('year').value;
-                const eD = sel.dataset.designation || 'N/A'; // Backward fallback
+                const eD = sel.dataset.designation || 'N/A'; 
 
                 if (!eN) { saveStatus.textContent = "Select employee."; return; }
                 const bS = parseFloat(document.getElementById('baseSalary').value) || 0, absD = parseFloat(absentDaysInput.value) || 0, hD = parseFloat(halfDaysInput.value) || 0, exD = parseFloat(extraDaysInput.value) || 0;
