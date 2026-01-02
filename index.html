@@ -585,6 +585,13 @@
                                 <input type="number" id="newEmployeeSalary" placeholder="e.g., 30000" class="w-full px-4 py-2 border border-gray-300 rounded-r-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
                         </div>
+                        <div id="ownerOnlySalaryField" class="hidden">
+                            <label for="newEmployeeOwnerSalary" class="block text-sm font-medium text-red-700 mb-1">Owner-Only Base Salary (Optional)</label>
+                            <div class="flex border-2 border-red-100 rounded-lg">
+                                <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-red-50 text-red-600 sm:text-sm">₹</span>
+                                <input type="number" id="newEmployeeOwnerSalary" placeholder="Private salary" class="w-full px-4 py-2 border-0 rounded-r-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+                            </div>
+                        </div>
                     </div>
                     <div class="flex gap-2">
                         <button id="addEmployeeBtn" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">Add Employee</button>
@@ -666,13 +673,13 @@
         let salaryRecords = [], employees = [], employeeToDelete = null, recordToDeleteId = null, lastCalculationData = null, currentEditingRecordId = null, currentMode = "accountant", chartInstance = null;
 
         const employeeSelect = document.getElementById('employeeName'), manageEmployeesBtn = document.getElementById('manageEmployeesBtn'), employeeModal = document.getElementById('employeeModal');
-        const employeeListContainer = document.getElementById('employeeListContainer'), newEmployeeNameInput = document.getElementById('newEmployeeName'), newEmployeeSalaryInput = document.getElementById('newEmployeeSalary'), newEmployeeDesignationInput = document.getElementById('newEmployeeDesignation'), addEmployeeBtn = document.getElementById('addEmployeeBtn'), updateEmployeeBtn = document.getElementById('updateEmployeeBtn'), cancelEmployeeUpdateBtn = document.getElementById('cancelEmployeeUpdateBtn'), employeeFormTitle = document.getElementById('employeeFormTitle'), employeeError = document.getElementById('employeeError');
+        const employeeListContainer = document.getElementById('employeeListContainer'), newEmployeeNameInput = document.getElementById('newEmployeeName'), newEmployeeSalaryInput = document.getElementById('newEmployeeSalary'), newEmployeeOwnerSalaryInput = document.getElementById('newEmployeeOwnerSalary'), newEmployeeDesignationInput = document.getElementById('newEmployeeDesignation'), addEmployeeBtn = document.getElementById('addEmployeeBtn'), updateEmployeeBtn = document.getElementById('updateEmployeeBtn'), cancelEmployeeUpdateBtn = document.getElementById('cancelEmployeeUpdateBtn'), employeeFormTitle = document.getElementById('employeeFormTitle'), employeeError = document.getElementById('employeeError');
         const confirmDeleteModal = document.getElementById('confirmDeleteModal'), employeeToDeleteName = document.getElementById('employeeToDeleteName'), cancelDeleteBtn = document.getElementById('cancelDeleteBtn'), confirmDeleteBtn = document.getElementById('confirmDeleteBtn'), confirmRecordDeleteModal = document.getElementById('confirmRecordDeleteModal'), recordToDeleteName = document.getElementById('recordToDeleteName'), cancelRecordDeleteBtn = document.getElementById('cancelRecordDeleteBtn'), confirmRecordDeleteBtn = document.getElementById('confirmRecordDeleteBtn');
         const calendarModal = document.getElementById('calendarModal'), openAbsentCalendarBtn = document.getElementById('openAbsentCalendar'), openHalfDayCalendarBtn = document.getElementById('openHalfDayCalendar'), openExtraDayCalendarBtn = document.getElementById('openExtraDayCalendar'), closeCalendarModalBtn = document.getElementById('closeCalendarModal'), cancelCalendarBtn = document.getElementById('cancelCalendarBtn'), saveCalendarBtn = document.getElementById('saveCalendarBtn'), calendarGrid = document.getElementById('calendarGrid'), calendarHeader = document.getElementById('calendarHeader'), absentDaysInput = document.getElementById('absentDays'), halfDaysInput = document.getElementById('halfDays'), extraDaysInput = document.getElementById('extraDays'), downloadPdfButton = document.getElementById('downloadPdfButton'), saveStatus = document.getElementById('saveStatus'), calculateButton = document.getElementById('calculateButton'), cancelEditButton = document.getElementById('cancelEditButton'), saveRecordButton = document.getElementById('saveRecordButton');
         const dashboardTab = document.getElementById('dashboardTab'), salaryDataTab = document.getElementById('salaryDataTab'), dashboardPage = document.getElementById('dashboardPage'), salaryDataPage = document.getElementById('salaryDataPage'), salaryRecordsContainer = document.getElementById('salaryRecordsContainer'), noRecordsText = document.getElementById('noRecordsText'), exportCsvButton = document.getElementById('exportCsvButton');
-        const analysisTab = document.getElementById('analysisTab'), analysisPage = document.getElementById('analysisPage'), analysisContent = document.getElementById('analysisContent'), noAnalysisDataText = document.getElementById('noAnalysisDataText'), analysisTotalDistributed = document.getElementById('analysisTotalDistributed'), analysisTotalPayslips = document.getElementById('analysisTotalPayslips'), analysisAveragePay = document.getElementById('analysisAveragePay'), analysisHighestPayslipAmount = document.getElementById('analysisHighestPayslipAmount'), analysisHighestPayslipEmployee = document.getElementById('analysisHighestPayslipEmployee'), analysisEmployeeTotalsList = document.getElementById('analysisEmployeeTotalsList'), analysisChartTitle = document.getElementById('analysisChartTitle'), analysisMostLeave = document.getElementById('analysisMostLeave'), analysisMostLeaveEmployee = document.getElementById('analysisMostLeaveEmployee'), analysisMostActive = document.getElementById('analysisMostActive'), analysisMostActiveEmployee = document.getElementById('analysisMostActiveEmployee');
-        const analysisTotalSalaryGiven = document.getElementById('analysisTotalSalaryGiven'), analysisTotalAdvanceGiven = document.getElementById('analysisTotalAdvanceGiven'), analysisTotalDeductionsCard = document.getElementById('analysisTotalDeductionsCard');
+        const analysisTab = document.getElementById('analysisTab'), analysisPage = document.getElementById('analysisPage'), analysisContent = document.getElementById('analysisContent'), noAnalysisDataText = document.getElementById('noAnalysisDataText'), analysisTotalSalaryGiven = document.getElementById('analysisTotalSalaryGiven'), analysisTotalAdvanceGiven = document.getElementById('analysisTotalAdvanceGiven'), analysisTotalDeductionsCard = document.getElementById('analysisTotalDeductionsCard'), analysisTotalDistributed = document.getElementById('analysisTotalDistributed'), analysisTotalPayslips = document.getElementById('analysisTotalPayslips'), analysisAveragePay = document.getElementById('analysisAveragePay'), analysisHighestPayslipAmount = document.getElementById('analysisHighestPayslipAmount'), analysisHighestPayslipEmployee = document.getElementById('analysisHighestPayslipEmployee'), analysisEmployeeTotalsList = document.getElementById('analysisEmployeeTotalsList'), analysisChartTitle = document.getElementById('analysisChartTitle'), analysisMostLeave = document.getElementById('analysisMostLeave'), analysisMostLeaveEmployee = document.getElementById('analysisMostLeaveEmployee'), analysisMostActive = document.getElementById('analysisMostActive'), analysisMostActiveEmployee = document.getElementById('analysisMostActiveEmployee');
         const analysisAvgPayCard = document.getElementById('analysisAvgPayCard'), analysisHighestPayCard = document.getElementById('analysisHighestPayCard'), analysisMostLeaveCard = document.getElementById('analysisMostLeaveCard'), analysisMostActiveCard = document.getElementById('analysisMostActiveCard');
+        const ownerOnlySalaryField = document.getElementById('ownerOnlySalaryField');
         const filterEmployeeName = document.getElementById('filterEmployeeName'), filterMonth = document.getElementById('filterMonth'), filterYear = document.getElementById('filterYear');
         const analysisFilterEmployeeName = document.getElementById('analysisFilterEmployeeName');
         const analysisFilterMonth = document.getElementById('analysisFilterMonth');
@@ -853,8 +860,6 @@
             const monthF = analysisFilterMonth.value;
             const yearF = analysisFilterYear.value;
 
-            // STRATEGY: Data Isolation. 
-            // Only fetch records for the current mode to ensure Accountant can't see Owner data in analysis.
             const filteredRecords = salaryRecords.filter(r => {
                 const modeMatch = r.createdByMode === currentMode;
                 const nameMatch = !nameF || r.employeeName === nameF;
@@ -873,14 +878,12 @@
             analysisContent.classList.remove('hidden');
             noAnalysisDataText.classList.add('hidden');
 
-            // --- Toggle comparison cards based on filter ---
             const isIndividualEmployee = !!nameF;
             [analysisAvgPayCard, analysisHighestPayCard, analysisMostLeaveCard, analysisMostActiveCard].forEach(card => {
                 if (isIndividualEmployee) card.classList.add('hidden');
                 else card.classList.remove('hidden');
             });
 
-            // Calculate stats based on filteredRecords (which already respects currentMode)
             const totalDistributed = filteredRecords.reduce((acc, r) => acc + (r.netPay || 0), 0);
             const totalPayslips = filteredRecords.length;
             const averagePay = totalPayslips > 0 ? (totalDistributed / totalPayslips) : 0;
@@ -950,6 +953,7 @@
             sortedE.forEach(emp => {
                 const o = new Option(emp.name, emp.name); 
                 o.dataset.salary = emp.baseSalary || "";
+                o.dataset.ownerSalary = emp.ownerSalary || ""; // New private salary field
                 o.dataset.designation = emp.designation || "N/A";
                 if (emp.name === currentS) o.selected = true; 
                 employeeSelect.add(o);
@@ -962,24 +966,27 @@
             employeeListContainer.innerHTML = employees.length ? '' : '<p class="text-gray-500 text-sm italic">No employees added.</p>';
             [...employees].sort((a, b) => a.name.localeCompare(b.name)).forEach(emp => {
                 const div = document.createElement('div'); div.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg border';
-                div.innerHTML = `<div><span class="text-gray-800 font-medium">${emp.name}</span><span class="text-xs text-blue-600 ml-2 italic">${emp.designation || 'N/A'}</span><span class="text-gray-500 text-sm ml-2">${emp.baseSalary ? `(₹${emp.baseSalary.toLocaleString('en-IN')})` : ''}</span></div><div class="flex gap-2"><button class="edit-employee-btn text-blue-600 hover:text-blue-800 font-medium" data-id="${emp.id}" data-name="${emp.name}" data-salary="${emp.baseSalary || ''}" data-designation="${emp.designation || 'N/A'}">Edit</button><button class="delete-employee-btn text-red-500 hover:text-red-700 font-medium" data-id="${emp.id}" data-name="${emp.name}">Delete</button></div>`;
+                const ownerSalaryText = emp.ownerSalary ? `<span class="text-red-500 text-xs ml-2 font-bold">(Owner: ₹${emp.ownerSalary.toLocaleString('en-IN')})</span>` : '';
+                div.innerHTML = `<div><span class="text-gray-800 font-medium">${emp.name}</span><span class="text-xs text-blue-600 ml-2 italic">${emp.designation || 'N/A'}</span><span class="text-gray-500 text-sm ml-2">(₹${emp.baseSalary.toLocaleString('en-IN')})</span> ${ownerSalaryText}</div><div class="flex gap-2"><button class="edit-employee-btn text-blue-600 hover:text-blue-800 font-medium" data-id="${emp.id}" data-name="${emp.name}" data-salary="${emp.baseSalary || ''}" data-owner-salary="${emp.ownerSalary || ''}" data-designation="${emp.designation || 'N/A'}">Edit</button><button class="delete-employee-btn text-red-500 hover:text-red-700 font-medium" data-id="${emp.id}" data-name="${emp.name}">Delete</button></div>`;
                 employeeListContainer.appendChild(div);
             });
         }
 
-        function resetEmployeeForm() { currentEmployeeEditingId = null; employeeFormTitle.textContent = "Add New Employee"; newEmployeeNameInput.value = ""; newEmployeeSalaryInput.value = ""; newEmployeeDesignationInput.value = ""; addEmployeeBtn.classList.remove('hidden'); updateEmployeeBtn.classList.add('hidden'); cancelEmployeeUpdateBtn.classList.add('hidden'); employeeError.classList.add('hidden'); }
+        function resetEmployeeForm() { currentEmployeeEditingId = null; employeeFormTitle.textContent = "Add New Employee"; newEmployeeNameInput.value = ""; newEmployeeSalaryInput.value = ""; newEmployeeOwnerSalaryInput.value = ""; newEmployeeDesignationInput.value = ""; addEmployeeBtn.classList.remove('hidden'); updateEmployeeBtn.classList.add('hidden'); cancelEmployeeUpdateBtn.classList.add('hidden'); employeeError.classList.add('hidden'); }
 
         async function addEmployee() {
             const name = newEmployeeNameInput.value.trim(), baseSalary = parseFloat(newEmployeeSalaryInput.value) || 0, designation = newEmployeeDesignationInput.value.trim() || "Staff";
+            const ownerSalary = parseFloat(newEmployeeOwnerSalaryInput.value) || 0;
             if (!name) { employeeError.textContent = 'Enter a name.'; employeeError.classList.remove('hidden'); return; }
             if (employees.some(e => e.name.toLowerCase() === name.toLowerCase())) { employeeError.textContent = 'Exists.'; employeeError.classList.remove('hidden'); return; }
-            try { addEmployeeBtn.disabled = true; await addDoc(employeesCollection, { name, baseSalary, designation, createdAt: Timestamp.now() }); resetEmployeeForm(); clearForm(); } catch (e) { console.error(e); } finally { addEmployeeBtn.disabled = false; }
+            try { addEmployeeBtn.disabled = true; await addDoc(employeesCollection, { name, baseSalary, ownerSalary, designation, createdAt: Timestamp.now() }); resetEmployeeForm(); clearForm(); } catch (e) { console.error(e); } finally { addEmployeeBtn.disabled = false; }
         }
 
         async function updateEmployee() {
             const name = newEmployeeNameInput.value.trim(), baseSalary = parseFloat(newEmployeeSalaryInput.value) || 0, designation = newEmployeeDesignationInput.value.trim() || "Staff";
+            const ownerSalary = parseFloat(newEmployeeOwnerSalaryInput.value) || 0;
             if (!name || !currentEmployeeEditingId) return;
-            try { updateEmployeeBtn.disabled = true; await updateDoc(doc(db, employeesCollection.path, currentEmployeeEditingId), { name, baseSalary, designation }); resetEmployeeForm(); } catch (e) { console.error(e); } finally { updateEmployeeBtn.disabled = false; }
+            try { updateEmployeeBtn.disabled = true; await updateDoc(doc(db, employeesCollection.path, currentEmployeeEditingId), { name, baseSalary, ownerSalary, designation }); resetEmployeeForm(); } catch (e) { console.error(e); } finally { updateEmployeeBtn.disabled = false; }
         }
 
         async function confirmDeleteEmployee() {
@@ -1149,6 +1156,8 @@
             modeSwitchBtn.dataset.mode = m;
             modeSwitchBtn.classList.toggle('bg-red-600', isO); modeSwitchBtn.classList.toggle('bg-indigo-600', !isO);
             manageEmployeesBtn.classList.toggle('hidden', !isO);
+            ownerOnlySalaryField.classList.toggle('hidden', !isO); // New: toggle owner salary field in modal
+            
             renderSalaryRecords(); if (!analysisPage.classList.contains('hidden')) renderAnalysis();
         }
 
@@ -1172,7 +1181,7 @@
             employeeListContainer.addEventListener('click', (e) => {
                 const d = e.target.closest('.delete-employee-btn'), ed = e.target.closest('.edit-employee-btn');
                 if (d) { employeeToDelete = { id: d.dataset.id, name: d.dataset.name }; employeeToDeleteName.textContent = d.dataset.name; showModal(confirmDeleteModal); }
-                if (ed) { currentEmployeeEditingId = ed.dataset.id; employeeFormTitle.textContent = "Update"; newEmployeeNameInput.value = ed.dataset.name; newEmployeeSalaryInput.value = ed.dataset.salary; newEmployeeDesignationInput.value = ed.dataset.designation || ""; addEmployeeBtn.classList.add('hidden'); updateEmployeeBtn.classList.remove('hidden'); cancelEmployeeUpdateBtn.classList.remove('hidden'); }
+                if (ed) { currentEmployeeEditingId = ed.dataset.id; employeeFormTitle.textContent = "Update"; newEmployeeNameInput.value = ed.dataset.name; newEmployeeSalaryInput.value = ed.dataset.salary; newEmployeeOwnerSalaryInput.value = ed.dataset.ownerSalary || ""; newEmployeeDesignationInput.value = ed.dataset.designation || ""; addEmployeeBtn.classList.add('hidden'); updateEmployeeBtn.classList.remove('hidden'); cancelEmployeeUpdateBtn.classList.remove('hidden'); }
             });
             cancelDeleteBtn.addEventListener('click', () => hideModal(confirmDeleteModal));
             confirmDeleteBtn.addEventListener('click', confirmDeleteEmployee);
@@ -1215,8 +1224,16 @@
             employeeSelect.addEventListener('change', (e) => {
                 if (currentEditingRecordId) return; clearForm();
                 const selected = e.target.options[e.target.selectedIndex];
-                const s = selected.dataset.salary; 
-                if (s) document.getElementById('baseSalary').value = s;
+                
+                // Logic: load Owner Salary if in Owner Mode AND it exists, otherwise Default Salary
+                const baseS = selected.dataset.salary;
+                const ownerS = selected.dataset.ownerSalary;
+                
+                if (currentMode === 'owner' && ownerS && parseFloat(ownerS) > 0) {
+                    document.getElementById('baseSalary').value = ownerS;
+                } else if (baseS) {
+                    document.getElementById('baseSalary').value = baseS;
+                }
             });
 
             modeSwitchBtn.addEventListener('click', () => { if (modeSwitchBtn.dataset.mode === 'accountant') { passwordError.classList.add('hidden'); passwordInput.value = ""; showModal(passwordModal); } else setMode('accountant'); });
